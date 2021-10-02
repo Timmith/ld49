@@ -7,5 +7,6 @@ edition = "2018"
 
 [dependencies]
 async-std = { version = "1.10.0", features = ["attributes"] }
+serde = { version = "1.0.130", features = ["derive"] }
 sqlx = { version = "0.5.9", features = ["json", "macros", "migrate", "postgres", "runtime-async-std-native-tls", "time"] }
 tide = "0.16.0"
