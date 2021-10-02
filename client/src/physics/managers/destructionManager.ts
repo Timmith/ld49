@@ -1,6 +1,4 @@
 import { Fixture } from "box2d";
-import { removeFromArray } from "~/utils/arrayUtils";
-import { rand } from "~/utils/math";
 
 import { getBodyEventManager } from "./bodyEventManager";
 
@@ -27,7 +25,6 @@ export function processDestructions() {
 function destructBody(fixt: Fixture) {
 	//console.log("DESTRUCTION!!");
 	const body = fixt.GetBody();
-	const world = body.GetWorld();
 
 	try {
 		getBodyEventManager().destroyBody(body);

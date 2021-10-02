@@ -1,9 +1,5 @@
-import { Vector3 } from "three";
-import CharacterKeyboardController from "~/controllers/MouseKeyboardController";
-import getKeyboardInput from "~/input/getKeyboardInput";
 import AvatarContactListener from "~/physics/contact listeners/AvatarContactListener";
 import { getUrlInt } from "~/utils/location";
-import { lerp } from "~/utils/math";
 
 import TestGraphicsLevelScene from "./TestGraphicsLevel";
 
@@ -27,7 +23,7 @@ export default class TestGraphicsCharacterScene extends TestGraphicsLevelScene {
 		// 	character.update(dt);
 		// }
 
-		const camPos = this.camera.position;
+		// const camPos = this.camera.position;
 		// const newCamPos = camTarget.clone();
 		// newCamPos.x += 0.04 * 7;
 		// newCamPos.y += 0.15 * 7;
@@ -45,13 +41,5 @@ export default class TestGraphicsCharacterScene extends TestGraphicsLevelScene {
 		this.sunLight.target.position.x = this.camera.position.x;
 		this.sunLight.target.updateMatrixWorld(true);
 		this.sunLight.updateMatrixWorld(true);
-	}
-	private getCharactersPosition() {
-		const pos = new Vector3();
-		// for (const character of this.characters) {
-		// 	pos.add(character.visuals.position);
-		// }
-		// pos.multiplyScalar(1 / this.characters.length);
-		return pos;
 	}
 }

@@ -34,7 +34,7 @@ class CameraShaker {
 		this._timers = [];
 		this._shakeScale = 0.00025;
 		this._shakeStrength = 0;
-		const shakyCamera = camera.clone();
+		const shakyCamera = camera.clone() as PerspectiveCamera;
 		shakyCamera.position.set(0, 0, 0);
 		shakyCamera.quaternion.setFromEuler(new Euler(0, 0, 0));
 		shakyCamera.scale.set(1, 1, 1);

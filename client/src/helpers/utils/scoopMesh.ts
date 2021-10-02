@@ -1,14 +1,4 @@
-import {
-	BufferGeometry,
-	Camera,
-	Geometry,
-	Group,
-	Material,
-	Mesh,
-	Scene,
-	WebGLRenderer,
-	WebGLStencilBuffer
-} from "three";
+import { BufferGeometry, Camera, Group, Material, Mesh, Scene, WebGLRenderer, WebGLStencilBuffer } from "three";
 import { materialLibrary } from "~/materials/library";
 
 export function makeScoopMesh(mesh: Mesh) {
@@ -20,7 +10,7 @@ export function makeScoopMesh(mesh: Mesh) {
 		renderer: WebGLRenderer,
 		scene: Scene,
 		camera: Camera,
-		geometry: Geometry | BufferGeometry,
+		geometry: BufferGeometry,
 		material: Material,
 		group: Group
 	) => {
@@ -30,7 +20,7 @@ export function makeScoopMesh(mesh: Mesh) {
 		renderer: WebGLRenderer,
 		scene: Scene,
 		camera: Camera,
-		geometry: Geometry | BufferGeometry,
+		geometry: BufferGeometry,
 		material: Material,
 		group: Group
 	) => {
@@ -41,7 +31,7 @@ export function makeScoopMesh(mesh: Mesh) {
 		renderer: WebGLRenderer,
 		scene: Scene,
 		camera: Camera,
-		geometry: Geometry | BufferGeometry,
+		geometry: BufferGeometry,
 		material: Material,
 		group: Group
 	) => {
@@ -51,7 +41,7 @@ export function makeScoopMesh(mesh: Mesh) {
 		renderer: WebGLRenderer,
 		scene: Scene,
 		camera: Camera,
-		geometry: Geometry | BufferGeometry,
+		geometry: BufferGeometry,
 		material: Material,
 		group: Group
 	) => {

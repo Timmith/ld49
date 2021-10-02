@@ -1,4 +1,3 @@
-import { startControls } from "~/controllers/startControls";
 import { debugPolygonPhysics } from "~/meshes/Box2DPreviewMesh";
 import { createStaticBox } from "~/physics/utils/physicsUtils";
 

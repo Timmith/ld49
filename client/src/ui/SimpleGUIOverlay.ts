@@ -14,7 +14,6 @@ import {
 } from "three";
 import device from "~/device";
 import { canvas } from "~/renderer";
-import TextMesh from "~/text/TextMesh";
 import { removeFromArray } from "~/utils/arrayUtils";
 
 export default class SimpleGUIOverlay {
@@ -35,7 +34,6 @@ export default class SimpleGUIOverlay {
 	private _geometryMedium: CircleBufferGeometry;
 	private _geometrySmall: CircleBufferGeometry;
 	private _geometrySqaureSmall: BoxBufferGeometry;
-	private _geometryHealthBar: BoxBufferGeometry;
 
 	private _imageLoader: TextureLoader = new TextureLoader();
 
@@ -43,9 +41,6 @@ export default class SimpleGUIOverlay {
 	private _fullscreenEnterTextureLoading: Promise<Texture> | undefined;
 	private _fullscreenExitTextureLoading: Promise<Texture> | undefined;
 	private _whiteHeartTextureLoading: Promise<Texture> | undefined;
-	private _pistolTextureLoading: Promise<Texture> | undefined;
-	private _uziTextureLoading: Promise<Texture> | undefined;
-	private _weaponContainerTextureLoading: Promise<Texture> | undefined;
 
 	constructor() {
 		this._scene.add(this._camera);
@@ -243,39 +238,6 @@ export default class SimpleGUIOverlay {
 		return this._whiteHeartTextureLoading;
 	}
 
-	private getWeaponContainerTexture() {
-		if (!this._weaponContainerTextureLoading) {
-			this._weaponContainerTextureLoading = this._imageLoader.loadAsync("game/icons/weapon-container.png");
-			this._weaponContainerTextureLoading.then(tex => {
-				tex.minFilter = NearestFilter;
-				tex.magFilter = NearestFilter;
-			});
-		}
-		return this._weaponContainerTextureLoading;
-	}
-
-	private getPistolTexture() {
-		if (!this._pistolTextureLoading) {
-			this._pistolTextureLoading = this._imageLoader.loadAsync("game/icons/weapon-pistol.png");
-			this._pistolTextureLoading.then(tex => {
-				tex.minFilter = NearestFilter;
-				tex.magFilter = NearestFilter;
-			});
-		}
-		return this._pistolTextureLoading;
-	}
-
-	private getUziTexture() {
-		if (!this._uziTextureLoading) {
-			this._uziTextureLoading = this._imageLoader.loadAsync("game/icons/weapon-uzi.png");
-			this._uziTextureLoading.then(tex => {
-				tex.minFilter = NearestFilter;
-				tex.magFilter = NearestFilter;
-			});
-		}
-		return this._uziTextureLoading;
-	}
-
 	private getBiggerCircleGeometry() {
 		if (!this._geometryBigger) {
 			this._geometryBigger = new CircleBufferGeometry(3.5, 32);
@@ -308,12 +270,6 @@ export default class SimpleGUIOverlay {
 			);
 		}
 		return this._geometrySqaureSmall;
-	}
-	private getHealthBarGeometry() {
-		if (!this._geometryHealthBar) {
-			this._geometryHealthBar = new BoxBufferGeometry(1.0, 1.0);
-		}
-		return this._geometryHealthBar;
 	}
 }
 

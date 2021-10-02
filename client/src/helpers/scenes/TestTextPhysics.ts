@@ -48,22 +48,6 @@ export function runTextPhysicsTest(scene: Scene, b2World: World) {
 			"/**",
 			"* For the brave souls who get this far: You are the chosen ones,",
 			"* the valiant knights of programming who toil away, without rest,",
-			"* fixing our most awful code. To you, true saviors, kings of men,",
-			"* I say this: never gonna give you up, never gonna let you down,",
-			"* never gonna run around and desert you. Never gonna make you cry,",
-			"* never gonna say goodbye. Never gonna tell a lie and hurt you.",
-			"*/"
-		].join("\n"),
-		textSettings.code,
-		undefined,
-		undefined
-	);
-
-	const testCode1 = new TextMesh(
-		[
-			"/**",
-			"* For the brave souls who get this far: You are the chosen ones,",
-			"* the valiant knights of programming who toil away, without rest,",
 			"* testCode.scale.multiplyScalar(s)",
 			"* testCode.position.z -= 6",
 			"* testCode.position.x -= 2",
@@ -85,19 +69,19 @@ export function runTextPhysicsTest(scene: Scene, b2World: World) {
 		undefined
 	);
 
-	testCode1.scale.multiplyScalar(s);
-	testCode1.position.z -= 6;
-	testCode1.position.x -= 2;
-	scene.add(testCode1);
+	testCode.scale.multiplyScalar(s);
+	testCode.position.z -= 6;
+	testCode.position.x -= 2;
+	scene.add(testCode);
 
-	testCode1.onMeasurementsUpdated = () => {
+	testCode.onMeasurementsUpdated = () => {
 		if (lastKnownTextBodies) {
 			for (const body of lastKnownTextBodies) {
 				getBodyEventManager().destroyBody(body);
 			}
 			lastKnownTextBodies = undefined;
 		}
-		lastKnownTextBodies = textToPhysicsBodies(testCode1, b2World);
+		lastKnownTextBodies = textToPhysicsBodies(testCode, b2World);
 	};
-	return testCode1;
+	return testCode;
 }
