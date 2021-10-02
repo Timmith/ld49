@@ -325,8 +325,7 @@ export default function makePolygonPhysics(
 		}
 		const fixtureDef = new FixtureDef();
 		const shape = new PolygonShape();
-		// Property 'SetAsArray' does not exist on type 'b2PolygonShape'
-		// shape.SetAsArray(subVerts);
+		shape._Set(i => subVerts[i], subVerts.length);
 		fixtureDef.shape = shape;
 		fixtureDef.filter.categoryBits = makeBitMask(["environment"]);
 		body.CreateFixture(fixtureDef);
