@@ -35,6 +35,7 @@ export default class Testb2World {
 	autoClear = true;
 	ui = new SimpleGUIOverlay();
 	selectedBody: Body | undefined;
+	cursorPosition: Vec2;
 
 	protected scene: Scene;
 	protected camera: Camera;
@@ -82,20 +83,8 @@ export default class Testb2World {
 		createStaticBox(this.b2World, -1, -0.9, 0.2, 0.1);
 		createStaticBox(this.b2World, 1, -0.9, 0.2, 0.1);
 
-		createSensorBox(
-			this.b2World,
-			0,
-			-1.5,
-			10,
-			0.1,
-			undefined,
-			undefined,
-			undefined,
-			["penalty"],
-			["architecture"],
-			true
-		);
-		createSensorBox(this.b2World, 0, 1, 10, 0.1, undefined, undefined, undefined, ["goal"], ["architecture"], true);
+		createSensorBox(this.b2World, 0, -1.5, 10, 0.1, ["penalty"], ["architecture"]);
+		createSensorBox(this.b2World, 0, 1, 10, 0.1, ["goal"], ["architecture"]);
 
 		// const cm = b2World.GetContactManager();
 		// let contacts = cm.m_contactList;
@@ -112,16 +101,7 @@ export default class Testb2World {
 
 		const onDebugMouseDown = (mouseClick: MouseEvent) => {
 			const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
-			// const playerPosition: Vec2 = this.b2Preview
-			// 	? this.b2Preview.offset
-			// 	: this.rayCastConverter!(window.innerWidth / 2, window.innerHeight / 2);
-			// const vectorFromPlayer: Vec2 = clickedb2Space.Clone().SelfSub(playerPosition); //BULLET SPAWN POINT
-			/* Vector from player to clicked target location (clone clicked b2Space coordinates), as if there was no offset (subtract player position from vector), normalized (for small unit length), and scaled to be used to apply a force (like knockback) later */
-			// const distanceFromPlayer = vectorFromPlayer.Length();
-			/* distanceFromPlayer is used to set the relative TimedTask of applying LinearDamping to throwGeneric object */
-			// vectorFromPlayer.SelfNormalize();
-			// vectorFromPlayer.SelfMul(0.0075); //BULLET SPEED
-			/* Cast the Ray; retrieve the reference to hitBody and corresponding userData, subtract 1 Health, destroy if isDead (WHILE HOLDING Q) */
+
 			if (isKeyQDown) {
 				createDynamicBox(
 					b2World,
@@ -129,9 +109,6 @@ export default class Testb2World {
 					clickedb2Space.y,
 					0.2,
 					0.8,
-					undefined,
-					undefined,
-					undefined,
 					["architecture"],
 					["penalty", "environment", "architecture", "goal"]
 				);
@@ -153,28 +130,7 @@ export default class Testb2World {
 				b2World.SetGravity(new Vec2(0, 0));
 			}
 
-			// TODO
-			// when alternating between gravity On/Off
-			// loop over all the current objects in play and setLinearDamping to really high when gravity is Off
-			// and setLinearDamping to moderate when gravity is On
-
-			// TODO
-			// players and player controls will directly manipulate the cursorBody,
-			// which will be able to select/grab and rotate pieces
-
-			// if (isKeyVDown) {
-
 			this.selectedBody = queryForSingleArchitectureBody(b2World, clickedb2Space);
-			// if (this.selectedBody) {
-			// 	// const fixtList = this.selectedBody.GetFixtureList();
-			// 	// console.log("occupyingBlock exists");
-			// 	// console.log(this.selectedBody);
-			// } else {
-			// 	this.selectedBody = undefined;
-			// 	// console.log(this.selectedBody);
-			// }
-
-			// }
 
 			/* CONSOLE LOG to notify of click in client space versus game space */
 			// console.log(` Client Space				VS		Game Space			VS		distFromPlayer
@@ -187,11 +143,11 @@ export default class Testb2World {
 		};
 
 		const onDebugMouseMove = (mouseMove: MouseEvent) => {
+			this.cursorPosition = this.rayCastConverter!(mouseMove.clientX, mouseMove.clientY);
+
 			if (this.selectedBody) {
 				this.selectedBody.SetLinearVelocity(new Vec2(0.0001, 0));
-				// const position: Vec2 = this.selectedBody.GetPosition()
-				const mouseInb2Space: Vec2 = this.rayCastConverter!(mouseMove.clientX, mouseMove.clientY);
-				this.selectedBody.SetPosition(mouseInb2Space);
+				// hacky way of getting the currently dragged about piece to interact with other pieces
 			}
 		};
 
@@ -224,6 +180,10 @@ export default class Testb2World {
 		this.scene.updateMatrixWorld(false);
 		this.b2World.Step(dt, 10, 4);
 
+		if (this.selectedBody) {
+			this.selectedBody.SetPosition(this.cursorPosition);
+		}
+
 		for (const pu of this._postUpdates) {
 			pu(dt);
 		}
@@ -233,7 +193,7 @@ export default class Testb2World {
 		}
 
 		processDestructions();
-		processHUD(dt);
+		// processHUD(dt);
 	}
 
 	render(renderer: WebGLRenderer, dt: number) {

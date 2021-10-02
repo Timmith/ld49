@@ -83,11 +83,11 @@ export function createSensorBox(
 	y: number,
 	width: number,
 	height: number,
+	categoryArray?: PBits[],
+	maskArray?: PBits[],
 	bodyType: BodyType = BodyType.b2_staticBody,
 	friction = 0.1,
 	density = 1,
-	categoryArray?: PBits[],
-	maskArray?: PBits[],
 	isSensor = true,
 	entityData?: any
 ) {
@@ -122,11 +122,11 @@ export function createDynamicBox(
 	y: number,
 	width: number,
 	height: number,
+	categoryArray?: PBits[],
+	maskArray?: PBits[],
 	bodyType: BodyType = BodyType.b2_dynamicBody,
 	friction = 0.2,
 	density = 1,
-	categoryArray?: PBits[],
-	maskArray?: PBits[],
 	isSensor = false,
 	entityData?: any
 ) {
