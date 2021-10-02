@@ -1,4 +1,4 @@
-import { BodyDef, FixtureDef, PolygonShape, ShapeType, Vec2, World } from "box2d";
+import { Body, BodyDef, FixtureDef, PolygonShape, ShapeType, Vec2, World } from "box2d";
 import { Camera, Color, Fog, PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import device from "~/device";
 import getKeyboardInput from "~/input/getKeyboardInput";
@@ -13,6 +13,7 @@ import {
 	createImprovedPhysicsCircle,
 	createSensorBox,
 	createStaticBox,
+	queryForSingleArchitectureBody,
 	queryForSingleEnvironmentBlock,
 	WallData
 } from "~/physics/utils/physicsUtils";
@@ -51,6 +52,7 @@ let isKeyVDown: boolean = false;
 export default class Testb2World {
 	autoClear = true;
 	ui = new SimpleGUIOverlay();
+	selectedBody: Body | undefined;
 
 	protected scene: Scene;
 	protected camera: Camera;
@@ -140,18 +142,15 @@ export default class Testb2World {
 
 		const onDebugMouseDown = (mouseClick: MouseEvent) => {
 			const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
-			const playerPosition: Vec2 = this.b2Preview
-				? this.b2Preview.offset
-				: this.rayCastConverter!(window.innerWidth / 2, window.innerHeight / 2);
-			const vectorFromPlayer: Vec2 = clickedb2Space.Clone().SelfSub(playerPosition); //BULLET SPAWN POINT
+			// const playerPosition: Vec2 = this.b2Preview
+			// 	? this.b2Preview.offset
+			// 	: this.rayCastConverter!(window.innerWidth / 2, window.innerHeight / 2);
+			// const vectorFromPlayer: Vec2 = clickedb2Space.Clone().SelfSub(playerPosition); //BULLET SPAWN POINT
 			/* Vector from player to clicked target location (clone clicked b2Space coordinates), as if there was no offset (subtract player position from vector), normalized (for small unit length), and scaled to be used to apply a force (like knockback) later */
-
-			const distanceFromPlayer = vectorFromPlayer.Length();
+			// const distanceFromPlayer = vectorFromPlayer.Length();
 			/* distanceFromPlayer is used to set the relative TimedTask of applying LinearDamping to throwGeneric object */
-
-			vectorFromPlayer.SelfNormalize();
-			vectorFromPlayer.SelfMul(0.0075); //BULLET SPEED
-
+			// vectorFromPlayer.SelfNormalize();
+			// vectorFromPlayer.SelfMul(0.0075); //BULLET SPEED
 			/* Cast the Ray; retrieve the reference to hitBody and corresponding userData, subtract 1 Health, destroy if isDead (WHILE HOLDING Q) */
 			if (isKeyQDown) {
 				createDynamicBox(
@@ -167,7 +166,6 @@ export default class Testb2World {
 					["penalty", "environment", "architecture", "goal"]
 				);
 			}
-
 			if (isKeyZDown) {
 				createImprovedPhysicsCircle(
 					b2World,
@@ -178,11 +176,9 @@ export default class Testb2World {
 					["penalty", "environment", "architecture", "goal"]
 				);
 			}
-
 			if (isKeyXDown) {
 				b2World.SetGravity(new Vec2(0, -9.8));
 			}
-
 			if (isKeyCDown) {
 				b2World.SetGravity(new Vec2(0, 0));
 			}
@@ -196,9 +192,19 @@ export default class Testb2World {
 			// players and player controls will directly manipulate the cursorBody,
 			// which will be able to select/grab and rotate pieces
 
-			if (isKeyVDown) {
-				createStaticBox(this.b2World, clickedb2Space.x, clickedb2Space.y, 1, 0.1);
+			// if (isKeyVDown) {
+
+			this.selectedBody = queryForSingleArchitectureBody(b2World, clickedb2Space);
+			if (this.selectedBody) {
+				const fixtList = this.selectedBody.GetFixtureList();
+				// console.log("occupyingBlock exists");
+				// console.log(this.selectedBody);
+			} else {
+				this.selectedBody = undefined;
+				// console.log(this.selectedBody);
 			}
+
+			// }
 
 			/* CONSOLE LOG to notify of click in client space versus game space */
 			// console.log(` Client Space				VS		Game Space			VS		distFromPlayer
@@ -206,7 +212,22 @@ export default class Testb2World {
 			// 		 Y: ${mouseClick.clientY}			Y: ${clickedb2Space.y}`);
 		};
 
+		const onDebugMouseUp = (mouseUp: MouseEvent) => {
+			this.selectedBody = undefined;
+		};
+
+		const onDebugMouseMove = (mouseMove: MouseEvent) => {
+			if (this.selectedBody) {
+				this.selectedBody.SetLinearVelocity(new Vec2(0, 0));
+				// const position: Vec2 = this.selectedBody.GetPosition()
+				const mouseInb2Space: Vec2 = this.rayCastConverter!(mouseMove.clientX, mouseMove.clientY);
+				this.selectedBody.SetPosition(mouseInb2Space);
+			}
+		};
+
 		document.addEventListener("mousedown", onDebugMouseDown, false);
+		document.addEventListener("mouseup", onDebugMouseUp, false);
+		document.addEventListener("mousemove", onDebugMouseMove, false);
 	} //+++++++++++++++++++++++++++END OF CONSTRUCTOR CURLY BRACKET++++++++++++++++++++++++++++++++//
 
 	HandleKey(code: KeyboardCodes, down: boolean) {

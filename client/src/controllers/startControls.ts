@@ -29,13 +29,13 @@ export function startControls(
 		registerHUD(gui);
 	};
 
-	rigToGamePad(gamePadAPI => initiateControls(new GamePadControls(gamePadAPI)));
+	// rigToGamePad(gamePadAPI => initiateControls(new GamePadControls(gamePadAPI)));
 
-	rigToKeyboard(keyboardAPI =>
-		initiateControls(new MouseKeyboardController(keyboardAPI, rayCastConverter, gui, b2Preview!))
-	);
+	// rigToKeyboard(keyboardAPI =>
+	// 	initiateControls(new MouseKeyboardController(keyboardAPI, rayCastConverter, gui, b2Preview!))
+	// );
 
-	rigToTouchScreen(touchScreenAPI => initiateControls(new TouchScreenController(gui)));
+	// rigToTouchScreen(touchScreenAPI => initiateControls(new TouchScreenController(gui)));
 
 	// hacky way of testing two characters on a keyboard
 	// rigToKeyboard(keyboardAPI => {

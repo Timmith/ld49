@@ -22,7 +22,7 @@ import { getArrNext, getArrWrap } from "../../utils/arrayUtils";
 import { wrap } from "../../utils/math";
 import { getBodyEventManager } from "../managers/bodyEventManager";
 
-import { SingleEnvironmentBlockQueryCallBack } from "./queryUtils";
+import { SingleArchitectureBodyQueryCallBack, SingleEnvironmentBlockQueryCallBack } from "./queryUtils";
 
 export function createPhysicBoxFromPixels(
 	world: World,
@@ -555,6 +555,29 @@ export function queryForSingleEnvironmentBlock(world: World, clickedb2Space: Vec
 		const position = __queryCallback.environmentBlockBody.GetPosition();
 		console.log(`environmentBlockBody already exists at position: ${position.x}x  ${position.y}y`);
 		return __queryCallback.environmentBlockBody;
+	} else {
+		return undefined;
+	}
+}
+
+const __architectureQueryCallback = new SingleArchitectureBodyQueryCallBack(undefined);
+export function queryForSingleArchitectureBody(world: World, clickedb2Space: Vec2, halfAABBsize?: number) {
+	if (!halfAABBsize) {
+		halfAABBsize = 0.001;
+	}
+
+	const testAABB: AABB = new AABB();
+	testAABB.lowerBound.Set(clickedb2Space.x - halfAABBsize, clickedb2Space.y - halfAABBsize);
+	testAABB.upperBound.Set(clickedb2Space.x + halfAABBsize, clickedb2Space.y + halfAABBsize);
+
+	__architectureQueryCallback.reset();
+	__architectureQueryCallback.clickedGameSpace = clickedb2Space;
+	world.QueryAABB(__architectureQueryCallback, testAABB);
+
+	if (__architectureQueryCallback.architectureBody) {
+		// const position = __architectureQueryCallback.architectureBody.GetPosition();
+		// console.log(`architectureBody exists at position: ${position.x}x  ${position.y}y`);
+		return __architectureQueryCallback.architectureBody;
 	} else {
 		return undefined;
 	}

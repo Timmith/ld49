@@ -11,7 +11,7 @@ let gui: SimpleGUIOverlay | undefined;
 export async function registerHUD(passedGUI: SimpleGUIOverlay) {
 	gui = passedGUI;
 
-	await initializeFullscreenButton();
+	// await initializeFullscreenButton();
 }
 
 export function unregisterUserHUD(playerBody: Body) {

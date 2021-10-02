@@ -13,7 +13,6 @@ import {
 	WebGLRenderer
 } from "three";
 import device from "~/device";
-import { PlayerData } from "~/physics/characters/PlayerPhysicsCharacter";
 import { canvas } from "~/renderer";
 import TextMesh from "~/text/TextMesh";
 import { removeFromArray } from "~/utils/arrayUtils";
@@ -149,80 +148,6 @@ export default class SimpleGUIOverlay {
 		return mesh;
 	}
 
-	async makeWeaponContainerIcon(x: number, y: number, playerData: PlayerData) {
-		const weaponContainerTexture = await this.getWeaponContainerTexture();
-		const weaponContainerImageAspectRatio =
-			weaponContainerTexture.image.width / weaponContainerTexture.image.height;
-		const weaponContainerGeo = new BoxBufferGeometry(
-			this._squareButtonDimensions * weaponContainerImageAspectRatio,
-			this._squareButtonDimensions
-		);
-		const weaponContainerMesh = this._makeUI(weaponContainerGeo, x, y, true, undefined);
-		weaponContainerMesh.material = new MeshBasicMaterial({
-			map: weaponContainerTexture,
-			transparent: true,
-			depthWrite: false,
-			opacity: 0.6
-		});
-		const mesh = weaponContainerMesh;
-		mesh.scale.setScalar(33);
-
-		return mesh;
-	}
-
-	async makePistolIcon(x: number, y: number) {
-		const pistolTexture = await this.getPistolTexture();
-		const pistolImageAspectRatio = pistolTexture.image.width / pistolTexture.image.height;
-		const pistolGeo = new BoxBufferGeometry(
-			this._squareButtonDimensions * pistolImageAspectRatio,
-			this._squareButtonDimensions
-		);
-		const pistolMesh = this._makeUI(pistolGeo, x, y, true, undefined);
-		pistolMesh.material = new MeshBasicMaterial({ map: pistolTexture, transparent: true });
-		const mesh = pistolMesh;
-
-		return mesh;
-	}
-
-	async makeWeaponIcon(x: number, y: number) {
-		// const uziTexture = await this.getUziTexture();
-		// const uziImageAspectRatio = uziTexture!.image.width / uziTexture!.image.height;
-		// const uziGeo = new BoxBufferGeometry(
-		// 	this._squareButtonDimensions * uziImageAspectRatio,
-		// 	this._squareButtonDimensions
-		// );
-		// const uziMesh = this._makeUI(uziGeo, x, y, true, undefined);
-		// uziMesh.material = new MeshBasicMaterial({ map: uziTexture, transparent: true });
-
-		const pistolTexture = await this.getPistolTexture();
-		const pistolImageAspectRatio = pistolTexture.image.width / pistolTexture.image.height;
-		const pistolGeo = new BoxBufferGeometry(
-			this._squareButtonDimensions * pistolImageAspectRatio,
-			this._squareButtonDimensions
-		);
-		const pistolMesh = this._makeUI(pistolGeo, x, y, true, undefined);
-		pistolMesh.material = new MeshBasicMaterial({ map: pistolTexture, transparent: true });
-		const mesh = pistolMesh;
-		// uziMesh.material.visible = false;
-
-		pistolMesh.userData = new ToggleButtonUserData(enabled => {
-			if (enabled) {
-				// mesh = uziMesh;
-				pistolMesh.material.visible = false;
-				// uziMesh.material.visible = true;
-				// mesh.material = new MeshBasicMaterial({ map: uziTexture, transparent: true });
-				// mesh.material.visible = false
-			} else {
-				// mesh = pistolMesh;
-				pistolMesh.material.visible = true;
-				// uziMesh.material.visible = false;
-				// mesh.material = new MeshBasicMaterial({ map: pistolTexture, transparent: true });
-			}
-		});
-
-		return mesh;
-	}
-
 	async makeWhiteHeartIcon(x: number, y: number) {
 		const whiteHeartTexture = await this.getWhiteHeartTexture();
 		const imageAspectRatio = whiteHeartTexture.image.width / whiteHeartTexture.image.height;
@@ -234,19 +159,6 @@ export default class SimpleGUIOverlay {
 		mesh.material = new MeshBasicMaterial({ map: whiteHeartTexture, transparent: true, depthWrite: false });
 		mesh.scale.setScalar(16);
 		return mesh;
-	}
-
-	makeStaminaBar(x: number, y: number, isButton?: boolean, uniqueMaterial = true) {
-		const staminaBarMesh = this._makeUI(this.getHealthBarGeometry(), x, y, isButton, uniqueMaterial);
-		staminaBarMesh.material.color.set("yellow");
-		staminaBarMesh.material.opacity = 0.5;
-
-		const staminaText = new TextMesh("Stamina:");
-		staminaText.scale.multiplyScalar(100);
-		staminaText.opacity = 2;
-		staminaBarMesh.add(staminaText);
-
-		return staminaBarMesh;
 	}
 
 	makeBiggerCircle(x: number, y: number) {

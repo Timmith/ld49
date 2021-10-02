@@ -66,3 +66,39 @@ export class SingleEnvironmentBlockQueryCallBack extends QueryCallback {
 		return true;
 	}
 }
+
+export class SingleArchitectureBodyQueryCallBack extends QueryCallback {
+	architectureBody: Body | undefined;
+	clickedGameSpace: Vec2;
+
+	constructor(clickedb2Space: Vec2 | undefined) {
+		super();
+
+		if (clickedb2Space) {
+			this.clickedGameSpace = clickedb2Space;
+		}
+	}
+
+	reset() {
+		this.architectureBody = undefined;
+	}
+
+	ReportFixture(fixture: Fixture): boolean {
+		const blockShape = fixture.GetShape();
+
+		const fixture_category = translateCategoryBitsToString(fixture.m_filter.categoryBits);
+
+		// if (fixture.GetBody().GetType() == BodyType.b2_staticBody && fixture_category === "architecture")
+
+		if (fixture_category === "architecture") {
+			// console.log("architectureBlock hit!!");
+			const isInside = blockShape.TestPoint(fixture.GetBody().GetTransform(), this.clickedGameSpace);
+
+			if (isInside) {
+				this.architectureBody = fixture.GetBody();
+				return false;
+			}
+		}
+		return true;
+	}
+}

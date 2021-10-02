@@ -7,6 +7,7 @@ import {
 	convertTob2Space,
 	createImprovedCircularSensor,
 	gridifyVectorToZeroPoint2,
+	queryForSingleArchitectureBody,
 	queryForSingleEnvironmentBlock
 } from "~/physics/utils/physicsUtils";
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
@@ -117,6 +118,7 @@ export default class MouseKeyboardController extends Controller {
 			const clickedb2Space: Vec2 = convertTob2Space(b2Preview, mouseClick.clientX, mouseClick.clientY);
 
 			if (!this.cursorBody) {
+				queryForSingleArchitectureBody;
 			}
 		};
 
