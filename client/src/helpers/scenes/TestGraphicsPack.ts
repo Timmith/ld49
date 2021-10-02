@@ -35,18 +35,9 @@ export default class TestGraphicsPack {
 		// 	_camera.updateProjectionMatrix();
 		// }
 
-		getBodyEventManager().startListeningForCreate(body => {
+		getBodyEventManager().startListeningForCreate(body => {});
 
-
-
-		});
-
-		getBodyEventManager().startListeningForDestroy(body => {
-
-
-
-		});
-
+		getBodyEventManager().startListeningForDestroy(body => {});
 	}
 
 	update(dt: number) {
@@ -54,7 +45,6 @@ export default class TestGraphicsPack {
 			mesh.position.x = body.GetPosition().x;
 			mesh.position.z = -body.GetPosition().y;
 		});
-
 	}
 
 	private tryAddArchitecture(scene: Scene, body: Body) {
@@ -89,5 +79,4 @@ export default class TestGraphicsPack {
 		}
 		return this._material;
 	}
-
 }

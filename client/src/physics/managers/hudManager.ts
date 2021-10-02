@@ -5,7 +5,6 @@ import TextMesh from "~/text/TextMesh";
 import SimpleGUIOverlay, { ToggleButtonUserData } from "~/ui/SimpleGUIOverlay";
 import { removeFromArray } from "~/utils/arrayUtils";
 
-
 const HUDBodies: Body[] = [];
 let gui: SimpleGUIOverlay | undefined;
 
@@ -21,7 +20,6 @@ export function unregisterUserHUD(playerBody: Body) {
 
 export function processHUD(dt: number) {
 	for (const player of HUDBodies) {
-
 	}
 }
 
@@ -31,4 +29,3 @@ async function initializeFullscreenButton() {
 		gui!._relativeHeightButtonSpacing / 2
 	);
 }
-

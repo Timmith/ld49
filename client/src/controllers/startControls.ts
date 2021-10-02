@@ -6,8 +6,8 @@ import { Box2DPreviewMesh } from "~/meshes/Box2DPreviewMesh";
 import { registerHUD } from "~/physics/managers/hudManager";
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 import { RayCastConverter } from "~/utils/RayCastConverter";
-import { Controller } from "./Controller";
 
+import { Controller } from "./Controller";
 import GamePadControls from "./GamePadController";
 import MouseKeyboardController from "./MouseKeyboardController";
 import TouchScreenController, { rigToTouchScreen } from "./TouchScreenController";
@@ -31,7 +31,9 @@ export function startControls(
 
 	rigToGamePad(gamePadAPI => initiateControls(new GamePadControls(gamePadAPI)));
 
-	rigToKeyboard(keyboardAPI => initiateControls(new MouseKeyboardController(keyboardAPI, rayCastConverter, gui)));
+	rigToKeyboard(keyboardAPI =>
+		initiateControls(new MouseKeyboardController(keyboardAPI, rayCastConverter, gui, b2Preview!))
+	);
 
 	rigToTouchScreen(touchScreenAPI => initiateControls(new TouchScreenController(gui)));
 

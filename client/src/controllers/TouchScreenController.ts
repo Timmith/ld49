@@ -84,7 +84,6 @@ export default class TouchScreenController extends Controller {
 		const onTouchStart = (touchStart: TouchEvent) => {
 			touchStart.preventDefault();
 			if (this.cursorBody) {
-
 			}
 		};
 
@@ -117,7 +116,6 @@ export default class TouchScreenController extends Controller {
 
 						this.debugAimIdentifier = undefined;
 					}
-
 				}
 			}
 
@@ -201,10 +199,8 @@ export default class TouchScreenController extends Controller {
 								this.aim = normalizedTempAimVector;
 
 								if (this.cursorBody) {
-
 								}
 							} else {
-
 							}
 						}
 					}

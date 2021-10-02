@@ -7,11 +7,12 @@ import BaseContactListener from "~/physics/contact listeners/BaseContactListener
 import { getBodyEventManager } from "~/physics/managers/bodyEventManager";
 import { processDestructions, queueDestruction } from "~/physics/managers/destructionManager";
 import { processHUD } from "~/physics/managers/hudManager";
-
 import {
 	convertTob2Space,
+	createDynamicBox,
 	createImprovedPhysicsCircle,
-	createPhysicBox,
+	createSensorBox,
+	createStaticBox,
 	queryForSingleEnvironmentBlock,
 	WallData
 } from "~/physics/utils/physicsUtils";
@@ -34,8 +35,9 @@ import { KeyboardCodes } from "~/utils/KeyboardCodes";
 import { getUrlColor, getUrlFlag, getUrlParam } from "~/utils/location";
 import { rand } from "~/utils/math";
 import { RayCastConverter } from "~/utils/RayCastConverter";
-import { getMetaContactListener } from "../../physics/utils/contactListenerUtils";
+
 import { startControls } from "../../controllers/startControls";
+import { getMetaContactListener } from "../../physics/utils/contactListenerUtils";
 
 const FOV = 35;
 const MOBILE_FOV = 28;
@@ -65,15 +67,15 @@ export default class Testb2World {
 		const b2World = new World(new Vec2(0, 0));
 		getBodyEventManager().init(b2World);
 
-		if (getUrlParam("test") === "b2Preview") {
-			const b2Preview = new Box2DPreviewMesh(b2World);
-			this.b2Preview = b2Preview;
-			if (this.b2Preview && !rayCastConverter) {
-				this.rayCastConverter = convertTob2Space.bind(null, this.b2Preview);
-			}
-			this.scene.add(this.b2Preview);
-			debugPolygonPhysics.value = true;
+		// if (getUrlParam("test") === "b2Preview") {
+		const b2Preview = new Box2DPreviewMesh(b2World);
+		this.b2Preview = b2Preview;
+		if (this.b2Preview && !rayCastConverter) {
+			this.rayCastConverter = convertTob2Space.bind(null, this.b2Preview);
 		}
+		this.scene.add(this.b2Preview);
+		debugPolygonPhysics.value = true;
+		// }
 		this.b2World = b2World;
 
 		/* Using the MetaContactListener, via either initializing one or regrabbing it from reference,
@@ -88,18 +90,53 @@ export default class Testb2World {
 		getKeyboardInput().addListener(this.HandleKey);
 
 		/* Character Spawn/Control */
-		//this._postUpdates.push(startControllableCharacters(this.b2World, rayCastConverter!, this.ui, this.b2Preview));
+		this._postUpdates.push(startControls(this.b2World, rayCastConverter!, this.ui, this.b2Preview));
 
 		/* Test Environment */
 
-		createPhysicBox(this.b2World, 0, -1, 2, 0.1);
-		createPhysicBox(this.b2World, -1, -0.9, 0.2, 0.1);
-		createPhysicBox(this.b2World, 1, -0.9, 0.2, 0.1);
+		createStaticBox(this.b2World, 0, -1, 2, 0.1);
+		createStaticBox(this.b2World, -1, -0.9, 0.2, 0.1);
+		createStaticBox(this.b2World, 1, -0.9, 0.2, 0.1);
+
+		const penaltyLine = createSensorBox(
+			this.b2World,
+			0,
+			-1.5,
+			10,
+			0.1,
+			undefined,
+			undefined,
+			undefined,
+			["penalty"],
+			["architecture"],
+			true
+		);
+		const goalLine = createSensorBox(
+			this.b2World,
+			0,
+			1,
+			10,
+			0.1,
+			undefined,
+			undefined,
+			undefined,
+			["goal"],
+			["architecture"],
+			true
+		);
+
+		// const cm = b2World.GetContactManager();
+		// let contacts = cm.m_contactList;
+		// while (contacts) {
+		// 	if (contacts.IsTouching()) {
+		// 		fixtureVertsCount += (__contactMarkerSegs + 3) * 2;
+		// 	}
+		// 	contacts = contacts.m_next;
+		// }
 
 		// 1.3 meters tall
 		// 0.35 meters wide
 		// 0.6 meters thick base
-
 
 		const onDebugMouseDown = (mouseClick: MouseEvent) => {
 			const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
@@ -117,28 +154,29 @@ export default class Testb2World {
 
 			/* Cast the Ray; retrieve the reference to hitBody and corresponding userData, subtract 1 Health, destroy if isDead (WHILE HOLDING Q) */
 			if (isKeyQDown) {
-				shootRayClosest.reset();
-				this.b2World.RayCast(shootRayClosest, playerPosition, clickedb2Space);
-
-				if (shootRayClosest.hitBody) {
-					const closestHitBody = shootRayClosest.hitBody;
-					// const hitUserData = closestHitBody.GetUserData();
-					const hitFixtures = closestHitBody.GetFixtureList();
-
-					if (hitFixtures) {
-						queueDestruction(hitFixtures);
-					}
-
-					closestHitBody.ApplyLinearImpulseToCenter(vectorFromPlayer);
-
-					// if (hitUserData.isDead) {
-					// 	getBodyEventManager().destroyBody(shootRayClosest.hitBody);
-					// }
-				}
+				createDynamicBox(
+					b2World,
+					clickedb2Space.x,
+					clickedb2Space.y,
+					0.2,
+					0.8,
+					undefined,
+					undefined,
+					undefined,
+					["architecture"],
+					["penalty", "environment", "architecture", "goal"]
+				);
 			}
 
 			if (isKeyZDown) {
-				createImprovedPhysicsCircle(b2World, clickedb2Space.x, clickedb2Space.y, 0.2);
+				createImprovedPhysicsCircle(
+					b2World,
+					clickedb2Space.x,
+					clickedb2Space.y,
+					0.2,
+					["architecture"],
+					["penalty", "environment", "architecture", "goal"]
+				);
 			}
 
 			if (isKeyXDown) {
@@ -149,22 +187,17 @@ export default class Testb2World {
 				b2World.SetGravity(new Vec2(0, 0));
 			}
 
-
 			// TODO
 			// when alternating between gravity On/Off
 			// loop over all the current objects in play and setLinearDamping to really high when gravity is Off
 			// and setLinearDamping to moderate when gravity is On
 
-
 			// TODO
 			// players and player controls will directly manipulate the cursorBody,
 			// which will be able to select/grab and rotate pieces
 
-
 			if (isKeyVDown) {
-
-				createPhysicBox(this.b2World, clickedb2Space.x, clickedb2Space.y, 1, 0.1);
-
+				createStaticBox(this.b2World, clickedb2Space.x, clickedb2Space.y, 1, 0.1);
 			}
 
 			/* CONSOLE LOG to notify of click in client space versus game space */

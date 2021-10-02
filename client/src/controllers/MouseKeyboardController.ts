@@ -1,10 +1,10 @@
 import { Body, Fixture, Vec2 } from "box2d";
 import { playWorldSound } from "~/audio/sounds";
 import KeyboardInput from "~/input/KeyboardInput";
+import { Box2DPreviewMesh } from "~/meshes/Box2DPreviewMesh";
 import { queueDestruction } from "~/physics/managers/destructionManager";
 import {
-	createEnvironmentBlock,
-	createGhostPlacementBlock,
+	convertTob2Space,
 	createImprovedCircularSensor,
 	gridifyVectorToZeroPoint2,
 	queryForSingleEnvironmentBlock
@@ -58,11 +58,18 @@ export default class MouseKeyboardController extends Controller {
 	// aim = new Vec2();
 
 	currentMousePosition: Vec2 = new Vec2();
+	b2Preview: Box2DPreviewMesh | undefined;
 
 	// aim = new VirtualAxis();
 
-	constructor(keyboardInput: KeyboardInput, private rayCastConverter: RayCastConverter, gui: SimpleGUIOverlay) {
+	constructor(
+		keyboardInput: KeyboardInput,
+		private rayCastConverter: RayCastConverter,
+		gui: SimpleGUIOverlay,
+		b2Preview: Box2DPreviewMesh
+	) {
 		super(undefined);
+		this.b2Preview = b2Preview;
 
 		// const aim = this.aim;
 		// const intent = this.desiredMovementVector;
@@ -98,7 +105,6 @@ export default class MouseKeyboardController extends Controller {
 					break;
 				case "KeyB":
 					break;
-
 			}
 		});
 
@@ -107,26 +113,21 @@ export default class MouseKeyboardController extends Controller {
 			mouseClick.stopPropagation();
 
 			const isButtonHit = gui.rayCastForButton(mouseClick.clientX, mouseClick.clientY);
+			// const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.clientX, mouseClick.clientY);
+			const clickedb2Space: Vec2 = convertTob2Space(b2Preview, mouseClick.clientX, mouseClick.clientY);
 
-			const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.clientX, mouseClick.clientY);
-			if (this.cursorBody) {
-
+			if (!this.cursorBody) {
 			}
 		};
 
 		const onMouseUp = (mouseUp: MouseEvent) => {
-
 			//
-
 		};
 
 		const onMouseMove = (mouseMove: MouseEvent) => {
-
 			if (this.cursorBody) {
 				const cursorPosition: Vec2 = this.currentPosition;
-
 			}
-
 		};
 
 		document.addEventListener("mousedown", onMouseDown, false);

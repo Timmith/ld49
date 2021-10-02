@@ -14,5 +14,5 @@ export class Controller {
 	// 	return Math.atan2(this.aim.y, this.aim.x);
 	// }
 
-	constructor(public cursorBody?: Body) { }
+	constructor(public cursorBody?: Body) {}
 }

@@ -1,6 +1,6 @@
 import { startControls } from "~/controllers/startControls";
 import { debugPolygonPhysics } from "~/meshes/Box2DPreviewMesh";
-import { createPhysicBox } from "~/physics/utils/physicsUtils";
+import { createStaticBox } from "~/physics/utils/physicsUtils";
 
 import TestPhysicsScene from "./TestPhysics";
 import { runTextPhysicsTest } from "./TestTextPhysics";
@@ -14,7 +14,7 @@ export default class TestCharacterControlOnTextScene extends TestPhysicsScene {
 		debugPolygonPhysics.value = true;
 
 		for (let i = 0; i < 10; i++) {
-			createPhysicBox(this.b2World, i - 5, -0.3, 0.5, 0.1);
+			createStaticBox(this.b2World, i - 5, -0.3, 0.5, 0.1);
 		}
 
 		// this._postUpdate = startControls(this.b2World, this.b2Preview);

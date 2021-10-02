@@ -1,4 +1,5 @@
 import { cleanAnalogValue, GamePadAPI } from "~/helpers/utils/gamePad";
+
 import { Controller } from "./Controller";
 
 export default class GamePadController extends Controller {

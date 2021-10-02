@@ -1,10 +1,9 @@
 import { Clock, Color, Vector3 } from "three";
 
-import { simpleTweener } from "./misc/animation/tweeners";
 import { BaseTestScene } from "./helpers/scenes/BaseTestScene";
+import Testb2World from "./helpers/scenes/Testb2World";
 import TestCharacterControlScene from "./helpers/scenes/TestCharacterControl";
 import TestCharacterControlOnTextScene from "./helpers/scenes/TestCharacterControlOnText";
-import Testb2World from "./helpers/scenes/Testb2World";
 import TestGraphics3D from "./helpers/scenes/TestGraphics3D";
 import TestGraphicsCharacterScene from "./helpers/scenes/TestGraphicsCharacter";
 import TestGraphicsLevelScene from "./helpers/scenes/TestGraphicsLevel";
@@ -18,6 +17,7 @@ import TestPhysicsPNGScene from "./helpers/scenes/TestPhysicsPNG";
 import TestStencilsScene from "./helpers/scenes/TestStencils";
 import TestTextScene from "./helpers/scenes/TestText";
 import TestTextPhysicsScene from "./helpers/scenes/TestTextPhysics";
+import { simpleTweener } from "./misc/animation/tweeners";
 import renderer from "./renderer";
 import { timeUniform } from "./uniforms";
 import { cameraShaker } from "./utils/cameraShaker";
@@ -33,7 +33,7 @@ renderer.setClearColor(new Color(0x344556), 1.0);
 cameraShaker.camera.position.set(0, 0.5, 0.5);
 cameraShaker.camera.lookAt(new Vector3());
 
-const testClasses: { [K: string]: any; } = {
+const testClasses: { [K: string]: any } = {
 	characterControl: TestCharacterControlScene,
 	characterControlOnText: TestCharacterControlOnTextScene,
 	graphicsLevel: TestGraphicsLevelScene,
@@ -55,7 +55,7 @@ const testClasses: { [K: string]: any; } = {
 /* inUrl:[?test=testScenario] selector */
 let TestClass: new () => BaseTestScene = TestLightingScene;
 
-const testParam = getUrlParam("test") || "graphics3D";
+const testParam = getUrlParam("test") || "b2Preview";
 const targetFPS = getUrlInt("fps", 60, 1, 240);
 
 if (testClasses.hasOwnProperty(testParam)) {

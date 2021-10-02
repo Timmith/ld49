@@ -17,7 +17,7 @@ class ArchitectureModelFactory {
 		} else {
 			this._queuedBodies.set(body, onReady);
 			if (this._status === "not started") {
-				this.init(() => { });
+				this.init(() => {});
 			}
 		}
 	}

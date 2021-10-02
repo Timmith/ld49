@@ -1,9 +1,9 @@
 import { BodyType } from "box2d";
 import { Vector2 } from "three";
-import { makeWobblyCircleShapePath } from "~/misc/shapePaths";
 import { debugPolygonPhysics } from "~/meshes/Box2DPreviewMesh";
+import { makeWobblyCircleShapePath } from "~/misc/shapePaths";
 import makePolygonPhysics, {
-	createPhysicBox,
+	createStaticBox,
 	deconstructConcavePath2,
 	deconstructConcavePath3
 } from "~/physics/utils/physicsUtils";
@@ -19,7 +19,7 @@ export default class TestConcaveBodiesScene extends TestPhysicsScene {
 		debugPolygonPhysics.value = true;
 
 		for (let i = 0; i < 10; i++) {
-			createPhysicBox(this.b2World, i - 5, -0.3, 0.5, 0.1);
+			createStaticBox(this.b2World, i - 5, -0.3, 0.5, 0.1);
 		}
 
 		const wobblyCircleVerts = makeWobblyCircleShapePath(0.1, 0.25, 40, 6);

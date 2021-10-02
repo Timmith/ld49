@@ -2,7 +2,7 @@ import { Body, Vec2, World } from "box2d";
 import { WebGLRenderer } from "three";
 import { Box2DPreviewMesh } from "~/meshes/Box2DPreviewMesh";
 import { getBodyEventManager } from "~/physics/managers/bodyEventManager";
-import { createPhysicBox, createPhysicsCircle } from "~/physics/utils/physicsUtils";
+import { createPhysicsCircle, createStaticBox } from "~/physics/utils/physicsUtils";
 import { rand } from "~/utils/math";
 
 import { BaseTestScene } from "./BaseTestScene";
@@ -33,9 +33,9 @@ export default class TestPhysicsScene extends BaseTestScene {
 		}
 
 		if (testBox) {
-			createPhysicBox(this.b2World, 0, -0.3, 1, 0.1);
-			createPhysicBox(this.b2World, 0.2, 0.3, 1, 0.1);
-			const ramp = createPhysicBox(this.b2World, 1.8, 0, 1, 0.1);
+			createStaticBox(this.b2World, 0, -0.3, 1, 0.1);
+			createStaticBox(this.b2World, 0.2, 0.3, 1, 0.1);
+			const ramp = createStaticBox(this.b2World, 1.8, 0, 1, 0.1);
 			ramp.SetAngle(Math.PI * 0.25);
 		}
 	}

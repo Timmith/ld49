@@ -34,7 +34,7 @@ export function createPhysicBoxFromPixels(
 ) {
 	const offsetX = -16;
 	const offsetY = 8;
-	createPhysicBox(
+	createStaticBox(
 		world,
 		(x + offsetX - width * 0.5) * __pixelPhysicsSize,
 		(-y + offsetY - height * 0.5) * __pixelPhysicsSize,
@@ -47,7 +47,7 @@ export function createPhysicBoxFromPixels(
 	);
 }
 
-export function createPhysicBox(
+export function createStaticBox(
 	world: World,
 	x: number,
 	y: number,
@@ -71,6 +71,84 @@ export function createPhysicBox(
 	if (bodyType === BodyType.b2_staticBody) {
 		fixtureDef.filter.categoryBits = makeBitMask(["environment"]);
 	}
+	const templateRect = new PolygonShape().SetAsBox(width * 0.5, height * 0.5);
+	fixtureDef.shape = templateRect;
+	boxBody.CreateFixture(fixtureDef);
+	return boxBody;
+}
+
+export function createSensorBox(
+	world: World,
+	x: number,
+	y: number,
+	width: number,
+	height: number,
+	bodyType: BodyType = BodyType.b2_staticBody,
+	friction = 0.1,
+	density = 1,
+	categoryArray?: PBits[],
+	maskArray?: PBits[],
+	isSensor = true,
+	entityData?: any
+) {
+	const bodyDef = new BodyDef();
+	const fixtureDef = new FixtureDef();
+	bodyDef.fixedRotation = false;
+	bodyDef.type = bodyType;
+
+	bodyDef.userData = entityData;
+	const boxBody = getBodyEventManager().createBody(bodyDef);
+
+	boxBody.SetPositionXY(x, y);
+	fixtureDef.friction = friction;
+	fixtureDef.restitution = 0.7;
+	fixtureDef.density = density;
+	fixtureDef.isSensor = isSensor;
+
+	if (categoryArray && maskArray) {
+		fixtureDef.filter.categoryBits = makeBitMask(categoryArray); // <-- categoryBits: "I am a..."
+		fixtureDef.filter.maskBits = makeBitMask(maskArray); // <-- maskBits: "I collide with..."
+	}
+
+	const templateRect = new PolygonShape().SetAsBox(width * 0.5, height * 0.5);
+	fixtureDef.shape = templateRect;
+	boxBody.CreateFixture(fixtureDef);
+	return boxBody;
+}
+
+export function createDynamicBox(
+	world: World,
+	x: number,
+	y: number,
+	width: number,
+	height: number,
+	bodyType: BodyType = BodyType.b2_dynamicBody,
+	friction = 0.2,
+	density = 1,
+	categoryArray?: PBits[],
+	maskArray?: PBits[],
+	isSensor = false,
+	entityData?: any
+) {
+	const bodyDef = new BodyDef();
+	const fixtureDef = new FixtureDef();
+	bodyDef.fixedRotation = false;
+	bodyDef.type = bodyType;
+
+	bodyDef.userData = entityData;
+	const boxBody = getBodyEventManager().createBody(bodyDef);
+
+	boxBody.SetPositionXY(x, y);
+	fixtureDef.friction = friction;
+	fixtureDef.restitution = 0.7;
+	fixtureDef.density = density;
+	fixtureDef.isSensor = isSensor;
+
+	if (categoryArray && maskArray) {
+		fixtureDef.filter.categoryBits = makeBitMask(categoryArray); // <-- categoryBits: "I am a..."
+		fixtureDef.filter.maskBits = makeBitMask(maskArray); // <-- maskBits: "I collide with..."
+	}
+
 	const templateRect = new PolygonShape().SetAsBox(width * 0.5, height * 0.5);
 	fixtureDef.shape = templateRect;
 	boxBody.CreateFixture(fixtureDef);
@@ -239,7 +317,7 @@ export default function makePolygonPhysics(
 	bodyDef.type = type;
 	const body = getBodyEventManager().createBody(bodyDef);
 	body.SetPositionXY(position.x, position.y);
-	verts.forEach(v => createPhysicBox(world, v.x + position.x, v.y + position.y, 0.002, 0.002));
+	verts.forEach(v => createStaticBox(world, v.x + position.x, v.y + position.y, 0.002, 0.002));
 	const subVerts2 = deconstructConcavePathMethod(verts);
 	for (const subVerts of subVerts2) {
 		if (subVerts.length < 3) {
@@ -275,7 +353,7 @@ export function textToPhysicsBodies(mesh: TextMesh, world: World) {
 			const bwidth: number = r - l;
 			const bheight: number = t - b;
 
-			const body = createPhysicBox(
+			const body = createStaticBox(
 				world,
 				bx * HORIZONTAL_TEXT_PHYSICS_SCALE,
 				by * HORIZONTAL_TEXT_PHYSICS_SCALE,
@@ -306,9 +384,9 @@ export function convertVec2Tob2Space(vector: Vec2, b2Preview: Box2DPreviewMesh) 
 
 export type PBits =
 	| "environment"
-	| "hero"
-	| "heroWeapon"
-	| "enemy"
+	| "architecture"
+	| "penalty"
+	| "goal"
 	| "enemyWeapon"
 	| "sound"
 	| "noiseMaker"
@@ -317,9 +395,9 @@ export type PBits =
 
 export const pBitsArr: PBits[] = [
 	"environment",
-	"hero",
-	"heroWeapon",
-	"enemy",
+	"architecture",
+	"penalty",
+	"goal",
 	"enemyWeapon",
 	"sound",
 	"noiseMaker",
@@ -358,12 +436,12 @@ export function createPhysicsCircle(b2World: World, x: number, y: number, radius
 	const bodyDef = new BodyDef();
 	bodyDef.type = BodyType.b2_dynamicBody;
 
-	fixtureDef.filter.categoryBits = makeBitMask(["enemy"]); // <-- categoryBits: "I am a..."
-	const maskArr: PBits[] = ["environment", "hero", "heroWeapon"];
-	if (ballsSelfCollide) {
-		maskArr.push("enemy");
-	}
-	fixtureDef.filter.maskBits = makeBitMask(maskArr); // <-- maskBits: "I collide with..."
+	// fixtureDef.filter.categoryBits = makeBitMask(["enemy"]); // <-- categoryBits: "I am a..."
+	// const maskArr: PBits[] = ["environment", "hero", "heroWeapon"];
+	// if (ballsSelfCollide) {
+	// 	maskArr.push("enemy");
+	// }
+	// fixtureDef.filter.maskBits = makeBitMask(maskArr); // <-- maskBits: "I collide with..."
 
 	// const userData = {
 	// 	health: 3,
