@@ -13,10 +13,10 @@
     "dist:build": "webpack --verbose --mode production --color --config config/webpack/webpack.config.dist.js",
     "lint": "yarn run lint:tslint && yarn run lint:prettier",
     "lint:fix": "yarn run lint:fixtslint && yarn run lint:fixprettier",
-    "lint:tslint": "tslint -c tslint.json src/**/*.ts",
-    "lint:prettier": "prettier-check --config ./.prettierrc src/**/*.ts",
-    "lint:fixprettier": "prettier --config ./.prettierrc --write src/**/*.ts",
-    "lint:fixtslint": "tslint -c tslint.json --fix src/**/*.ts"
+    "lint:tslint": "tslint -c tslint.json \"src/**/*.ts\"",
+    "lint:prettier": "prettier-check --config ./.prettierrc \"src/**/*.ts\"",
+    "lint:fixprettier": "prettier --config ./.prettierrc --write \"src/**/*.ts\"",
+    "lint:fixtslint": "tslint -c tslint.json --fix \"src/**/*.ts\""
   },
   "author": "Timmith Dysinski",
   "dependencies": {
