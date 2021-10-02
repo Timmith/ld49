@@ -11,10 +11,10 @@ export default class TestGraphics3D extends TestLightingScene {
 	b2World: Testb2World;
 	graphicsPack: TestGraphicsPack;
 	constructor() {
-		super(false);
+		super(false, false);
 
-		this.camera.position.set(0, 2, 5);
-		this.camera.lookAt(new Vector3(0, 2, 0));
+		this.camera.position.set(0, 0, 5);
+		this.camera.lookAt(new Vector3(0, 0, 0));
 
 		const nuPlane = new Plane(new Vector3(0, 0, -1));
 
