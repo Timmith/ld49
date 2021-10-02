@@ -10,6 +10,8 @@ import { processHUD } from "~/physics/managers/hudManager";
 
 import {
 	convertTob2Space,
+	createImprovedPhysicsCircle,
+	createPhysicBox,
 	queryForSingleEnvironmentBlock,
 	WallData
 } from "~/physics/utils/physicsUtils";
@@ -32,9 +34,7 @@ import { KeyboardCodes } from "~/utils/KeyboardCodes";
 import { getUrlColor, getUrlFlag, getUrlParam } from "~/utils/location";
 import { rand } from "~/utils/math";
 import { RayCastConverter } from "~/utils/RayCastConverter";
-
 import { getMetaContactListener } from "../../physics/utils/contactListenerUtils";
-
 import { startControls } from "../../controllers/startControls";
 
 const FOV = 35;
@@ -90,6 +90,17 @@ export default class Testb2World {
 		/* Character Spawn/Control */
 		//this._postUpdates.push(startControllableCharacters(this.b2World, rayCastConverter!, this.ui, this.b2Preview));
 
+		/* Test Environment */
+
+		createPhysicBox(this.b2World, 0, -1, 2, 0.1);
+		createPhysicBox(this.b2World, -1, -0.9, 0.2, 0.1);
+		createPhysicBox(this.b2World, 1, -0.9, 0.2, 0.1);
+
+		// 1.3 meters tall
+		// 0.35 meters wide
+		// 0.6 meters thick base
+
+
 		const onDebugMouseDown = (mouseClick: MouseEvent) => {
 			const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
 			const playerPosition: Vec2 = this.b2Preview
@@ -127,21 +138,39 @@ export default class Testb2World {
 			}
 
 			if (isKeyZDown) {
+				createImprovedPhysicsCircle(b2World, clickedb2Space.x, clickedb2Space.y, 0.2);
 			}
 
 			if (isKeyXDown) {
+				b2World.SetGravity(new Vec2(0, -9.8));
 			}
 
 			if (isKeyCDown) {
+				b2World.SetGravity(new Vec2(0, 0));
 			}
 
+
+			// TODO
+			// when alternating between gravity On/Off
+			// loop over all the current objects in play and setLinearDamping to really high when gravity is Off
+			// and setLinearDamping to moderate when gravity is On
+
+
+			// TODO
+			// players and player controls will directly manipulate the cursorBody,
+			// which will be able to select/grab and rotate pieces
+
+
 			if (isKeyVDown) {
+
+				createPhysicBox(this.b2World, clickedb2Space.x, clickedb2Space.y, 1, 0.1);
+
 			}
 
 			/* CONSOLE LOG to notify of click in client space versus game space */
-			// console.log(	` Client Space				VS		Game Space			VS		distFromPlayer
+			// console.log(` Client Space				VS		Game Space			VS		distFromPlayer
 			// 		 X: ${mouseClick.clientX}			X: ${clickedb2Space.x}		dist: ${distanceFromPlayer}
-			// 		 Y: ${mouseClick.clientY}			Y: ${clickedb2Space.y}` );
+			// 		 Y: ${mouseClick.clientY}			Y: ${clickedb2Space.y}`);
 		};
 
 		document.addEventListener("mousedown", onDebugMouseDown, false);
