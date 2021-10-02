@@ -1,7 +1,5 @@
 import { Body, Fixture, RayCastCallback, Vec2 } from "box2d";
 
-import { makeBitMask } from "./physicsUtils";
-
 export class RayCastClosestCallback extends RayCastCallback {
 	readonly hitPosition: Vec2 = new Vec2();
 	hitBody: Body | null;

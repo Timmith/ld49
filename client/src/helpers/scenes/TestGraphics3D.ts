@@ -2,7 +2,6 @@ import { Vec2 } from "box2d";
 import { Plane, Vector3, WebGLRenderer } from "three";
 import device from "~/device";
 import TestGraphicsPack from "~/helpers/scenes/TestGraphicsPack";
-import { __tileSize } from "~/settings/constants";
 import { hitTestPlaneAtPixel } from "~/utils/math";
 
 import Testb2World from "./Testb2World";
@@ -14,11 +13,10 @@ export default class TestGraphics3D extends TestLightingScene {
 	constructor() {
 		super(false);
 
-		this.camera.position.set(0, 4, 3);
-		this.camera.lookAt(new Vector3());
+		this.camera.position.set(0, 2, 5);
+		this.camera.lookAt(new Vector3(0, 2, 0));
 
-		const nuPlane = new Plane(new Vector3(0, 1, 0), -__tileSize * 0.5);
-		// const rayCaster = new Raycaster()
+		const nuPlane = new Plane(new Vector3(0, 0, -1));
 
 		this.b2World = new Testb2World((x, y) => {
 			const vec = new Vec2(x, y);
@@ -30,13 +28,13 @@ export default class TestGraphics3D extends TestLightingScene {
 			);
 			if (result) {
 				vec.x = result.x;
-				vec.y = -result.z;
+				vec.y = result.y;
 			}
 
 			return vec;
 		});
 
-		this.graphicsPack = new TestGraphicsPack(this.scene, this.camera);
+		this.graphicsPack = new TestGraphicsPack(this.scene);
 	}
 
 	update(dt: number) {

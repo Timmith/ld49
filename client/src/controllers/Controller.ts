@@ -1,4 +1,4 @@
-import { Body, Vec2, XY } from "box2d";
+import { Body } from "box2d";
 
 export class Controller {
 	get currentPosition() {

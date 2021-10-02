@@ -65,11 +65,7 @@ const test: BaseTestScene = new TestClass();
 
 let timePassed = 0;
 let timePassedApproved = 0;
-let skippedFrames = 0;
 const DESIRED_FRAME_DURATION = 1 / targetFPS; // 0.016666 seconds (or 16.666 milliseconds) per frame
-
-/* CONSOLE LOG to notify of frames skipped */
-// setInterval(() => {	console.log("Skipped frames:  " + skippedFrames); skippedFrames = 0;}, 1000);
 
 function loop() {
 	requestAnimationFrame(loop);
@@ -80,7 +76,6 @@ function loop() {
 	if (timePassed - timePassedApproved > DESIRED_FRAME_DURATION) {
 		timePassedApproved += DESIRED_FRAME_DURATION;
 	} else {
-		skippedFrames++;
 		return;
 	}
 

@@ -1,4 +1,4 @@
-import { cleanAnalogValue, GamePadAPI } from "~/helpers/utils/gamePad";
+import { GamePadAPI } from "~/helpers/utils/gamePad";
 
 import { Controller } from "./Controller";
 

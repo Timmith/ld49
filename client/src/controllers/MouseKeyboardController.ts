@@ -1,18 +1,6 @@
-import { Body, Fixture, Vec2 } from "box2d";
-import { playWorldSound } from "~/audio/sounds";
+import { Vec2 } from "box2d";
 import KeyboardInput from "~/input/KeyboardInput";
 import { Box2DPreviewMesh } from "~/meshes/Box2DPreviewMesh";
-import { queueDestruction } from "~/physics/managers/destructionManager";
-import {
-	convertTob2Space,
-	createImprovedCircularSensor,
-	gridifyVectorToZeroPoint2,
-	queryForSingleArchitectureBody,
-	queryForSingleEnvironmentBlock
-} from "~/physics/utils/physicsUtils";
-import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
-import { RayCastConverter } from "~/utils/RayCastConverter";
-import { taskTimer } from "~/utils/taskTimer";
 
 import { Controller } from "./Controller";
 
@@ -63,12 +51,7 @@ export default class MouseKeyboardController extends Controller {
 
 	// aim = new VirtualAxis();
 
-	constructor(
-		keyboardInput: KeyboardInput,
-		private rayCastConverter: RayCastConverter,
-		gui: SimpleGUIOverlay,
-		b2Preview: Box2DPreviewMesh
-	) {
+	constructor(keyboardInput: KeyboardInput, b2Preview: Box2DPreviewMesh) {
 		super(undefined);
 		this.b2Preview = b2Preview;
 
@@ -113,12 +96,11 @@ export default class MouseKeyboardController extends Controller {
 			mouseClick.preventDefault();
 			mouseClick.stopPropagation();
 
-			const isButtonHit = gui.rayCastForButton(mouseClick.clientX, mouseClick.clientY);
-			// const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.clientX, mouseClick.clientY);
-			const clickedb2Space: Vec2 = convertTob2Space(b2Preview, mouseClick.clientX, mouseClick.clientY);
+			// const isButtonHit = gui.rayCastForButton(mouseClick.clientX, mouseClick.clientY);
+			// const clickedb2Space: Vec2 = convertTob2Space(b2Preview, mouseClick.clientX, mouseClick.clientY);
 
 			if (!this.cursorBody) {
-				queryForSingleArchitectureBody;
+				// queryForSingleArchitectureBody;
 			}
 		};
 
@@ -128,7 +110,7 @@ export default class MouseKeyboardController extends Controller {
 
 		const onMouseMove = (mouseMove: MouseEvent) => {
 			if (this.cursorBody) {
-				const cursorPosition: Vec2 = this.currentPosition;
+				// const cursorPosition: Vec2 = this.currentPosition;
 			}
 		};
 

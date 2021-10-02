@@ -9,6 +9,7 @@ declare interface Char {
 	xadvance: number;
 	page: number;
 	chnl: number;
+	char: number;
 }
 
 declare interface Kerning {

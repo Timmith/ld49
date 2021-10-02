@@ -33,7 +33,9 @@
         "named-imports-order": "case-insensitive",
         "grouped-imports": true
       }
-    ]
+    ],
+    "no-sparse-arrays": false,
+    "no-empty": false
   },
   "extends": ["tslint:latest", "tslint-config-prettier"]
 }

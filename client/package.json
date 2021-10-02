@@ -13,10 +13,10 @@
     "dist:build": "webpack --verbose --mode production --color --config config/webpack/webpack.config.dist.js",
     "lint": "yarn run lint:tslint && yarn run lint:prettier",
     "lint:fix": "yarn run lint:fixtslint && yarn run lint:fixprettier",
-    "lint:tslint": "tslint -c tslint.json src/**/*.ts",
-    "lint:prettier": "prettier-check --config ./.prettierrc src/**/*.ts",
-    "lint:fixprettier": "prettier --config ./.prettierrc --write src/**/*.ts",
-    "lint:fixtslint": "tslint -c tslint.json --fix src/**/*.ts"
+    "lint:tslint": "tslint -c tslint.json 'src/**/*.ts'",
+    "lint:prettier": "prettier-check --config ./.prettierrc 'src/**/*.ts'",
+    "lint:fixprettier": "prettier --config ./.prettierrc --write 'src/**/*.ts'",
+    "lint:fixtslint": "tslint -c tslint.json --fix 'src/**/*.ts'"
   },
   "author": "Timmith Dysinski",
   "dependencies": {
@@ -46,11 +46,11 @@
     "ts-loader": "^5.3.2",
     "ts-node": "^7.0.1",
     "tsconfig-paths-webpack-plugin": "^3.2.0",
-    "tslint": "^5.12.0",
+    "tslint": "^5.20.1",
     "tslint-config-prettier": "^1.17.0",
     "tslint-language-service": "^0.9.9",
     "tslint-lines-between-class-members": "^1.3.3",
-    "typescript": "3.3.3333",
+    "typescript": "3.9.4",
     "typescript-styled-plugin": "^0.13.0",
     "webpack": "^4.30.0",
     "webpack-assets-by-type-plugin": "^0.1.0",
