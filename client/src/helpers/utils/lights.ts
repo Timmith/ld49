@@ -10,8 +10,8 @@ import {
 } from "three";
 import { getUrlFlag } from "~/utils/location";
 
-const __defaultGroundColor = new Color(0x4f3f2f);
-const __defaultSkyColor = new Color(0xafbfef);
+const __defaultGroundColor = new Color(0x4f3f2f).multiplyScalar(1.8);
+const __defaultSkyColor = new Color(0xafbfef).multiplyScalar(1.8);
 
 const s = 10;
 

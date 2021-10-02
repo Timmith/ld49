@@ -12,7 +12,7 @@ export class BaseTestScene {
 	constructor() {
 		const scene = new Scene();
 
-		const bgColor: Color = getUrlColor("bgColor", new Color(0x231f20));
+		const bgColor: Color = getUrlColor("bgColor", new Color(0x7f7f7f));
 		scene.fog = new Fog(bgColor.getHex(), 0, 60);
 		scene.autoUpdate = false;
 		scene.matrixAutoUpdate = false;
@@ -25,7 +25,7 @@ export class BaseTestScene {
 			camera.updateProjectionMatrix();
 		}, true);
 
-		camera.position.set(0, 0, 0);
+		camera.position.set(0, 3, 3);
 		camera.lookAt(0, 0, 0);
 		camera.updateProjectionMatrix();
 

@@ -6,8 +6,7 @@ import {
 	MeshStandardMaterial,
 	PerspectiveCamera,
 	PlaneBufferGeometry,
-	SphereBufferGeometry,
-	WebGLRenderer
+	SphereBufferGeometry
 } from "three";
 import { FPSControls } from "~/utils/fpsControls";
 import { getUrlFlag } from "~/utils/location";

@@ -11,6 +11,7 @@ import TestGraphicsLevelScene from "./helpers/scenes/TestGraphicsLevel";
 import TestKeyboardCharacterScene from "./helpers/scenes/TestKeyboardCharacter";
 import TestKeyboardInputScene from "./helpers/scenes/TestKeyboardInput";
 import TestLightingScene from "./helpers/scenes/TestLighting";
+import TestLitModelsScene from "./helpers/scenes/TestLitModels";
 import TestPhysicsScene from "./helpers/scenes/TestPhysics";
 import TestPhysicsConcaveBodiesScene from "./helpers/scenes/TestPhysicsConcaveBodies";
 import TestPhysicsPNGScene from "./helpers/scenes/TestPhysicsPNG";
@@ -40,6 +41,7 @@ const testClasses: { [K: string]: any; } = {
 	keyboard: TestKeyboardInputScene,
 	keyboardCharacter: TestKeyboardCharacterScene,
 	lighting: TestLightingScene,
+	litModels: TestLitModelsScene,
 	physics: TestPhysicsScene,
 	textPhysics: TestTextPhysicsScene,
 	physicsConcave: TestPhysicsConcaveBodiesScene,
