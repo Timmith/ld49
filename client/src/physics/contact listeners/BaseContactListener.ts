@@ -1,4 +1,5 @@
 import { Contact, ContactListener, Fixture } from "box2d";
+import { Player } from "~/helpers/scenes/Testb2World";
 import { translateCategoryBitsToString } from "~/physics/utils/physicsUtils";
 
 import { queueDestruction } from "../managers/destructionManager";
@@ -36,6 +37,15 @@ export default class BaseContactListener extends ContactListener {
 	}
 }
 function architectureHitsPenalty(architectureFixt: Fixture, penaltyFixt: Fixture) {
-	queueDestruction(architectureFixt);
-	console.log("You have incurred a penalty!!");
+	if (architectureFixt.GetBody().GetUserData() instanceof Player) {
+		const player = architectureFixt.GetBody().GetUserData();
+
+		if (player.currentHealth > 0) {
+			player.currentHealth -= 1;
+		}
+
+		console.log(player.currentHealth);
+		queueDestruction(architectureFixt);
+	}
+	// console.log("You have incurred a penalty!!");
 }

@@ -1,6 +1,7 @@
 import { Vec2 } from "box2d";
 import KeyboardInput from "~/input/KeyboardInput";
 import { Box2DPreviewMesh } from "~/meshes/Box2DPreviewMesh";
+import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 
 import { Controller } from "./Controller";
 
@@ -51,7 +52,7 @@ export default class MouseKeyboardController extends Controller {
 
 	// aim = new VirtualAxis();
 
-	constructor(keyboardInput: KeyboardInput, b2Preview: Box2DPreviewMesh) {
+	constructor(keyboardInput: KeyboardInput, b2Preview: Box2DPreviewMesh, gui: SimpleGUIOverlay) {
 		super(undefined);
 		this.b2Preview = b2Preview;
 

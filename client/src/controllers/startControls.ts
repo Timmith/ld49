@@ -1,5 +1,7 @@
 import { World } from "box2d";
+import { Player } from "~/helpers/scenes/Testb2World";
 import { Box2DPreviewMesh } from "~/meshes/Box2DPreviewMesh";
+import { registerHUD } from "~/physics/managers/hudManager";
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 import { RayCastConverter } from "~/utils/RayCastConverter";
 
@@ -7,7 +9,8 @@ export function startControls(
 	b2World: World,
 	rayCastConverter: RayCastConverter,
 	gui: SimpleGUIOverlay,
-	b2Preview?: Box2DPreviewMesh
+	b2Preview: Box2DPreviewMesh,
+	player: Player
 ) {
 	const postUpdates: Array<(dt: number) => void> = [];
 
@@ -17,13 +20,13 @@ export function startControls(
 	// b2World.SetContactListener(mcl);
 
 	// const initiateControls = (controller: Controller) => {
-	// 	registerHUD(gui);
+	registerHUD(player, gui);
 	// };
 
 	// rigToGamePad(gamePadAPI => initiateControls(new GamePadControls(gamePadAPI)));
 
 	// rigToKeyboard(keyboardAPI =>
-	// 	initiateControls(new MouseKeyboardController(keyboardAPI, rayCastConverter, gui, b2Preview!))
+	// initiateControls(new MouseKeyboardController(keyboardAPI, b2Preview, gui))
 	// );
 
 	// rigToTouchScreen(touchScreenAPI => initiateControls(new TouchScreenController(gui)));

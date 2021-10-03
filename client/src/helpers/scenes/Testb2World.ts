@@ -6,6 +6,7 @@ import { Box2DPreviewMesh, debugPolygonPhysics } from "~/meshes/Box2DPreviewMesh
 import BaseContactListener from "~/physics/contact listeners/BaseContactListener";
 import { getBodyEventManager } from "~/physics/managers/bodyEventManager";
 import { processDestructions } from "~/physics/managers/destructionManager";
+import { processHUD } from "~/physics/managers/hudManager";
 import {
 	convertTob2Space,
 	createDynamicBox,
@@ -29,19 +30,22 @@ let isKeyQDown: boolean = false;
 let isKeyZDown: boolean = false;
 let isKeyXDown: boolean = false;
 let isKeyCDown: boolean = false;
+let isKeyVDown: boolean = false;
 
 export default class Testb2World {
 	autoClear = true;
-	ui = new SimpleGUIOverlay();
+	gui = new SimpleGUIOverlay();
 	cursorPosition: Vec2;
 	selectedBody: Body | undefined;
 	lastSelectedBody: Body | undefined;
 
-	playerHealth: number = 5;
+	player = new Player();
 
 	architectureBodies: Body[] = [];
 	isTurningBody: boolean;
 	pivotPoint: Vec2 | undefined;
+	isStarted: boolean = false;
+	isTimerOver: boolean = false;
 
 	protected scene: Scene;
 	protected camera: Camera;
@@ -75,13 +79,11 @@ export default class Testb2World {
 		mcl.register(new BaseContactListener());
 		this.b2World.SetContactListener(mcl);
 
-		// const shootRayClosest = new RayCastClosestCallback();
-
 		/* The Be All And End All Keyboard Listener (a.k.a. THE BUTTON FUNNELER) */
 		getKeyboardInput().addListener(this.HandleKey);
 
 		/* Character Spawn/Control */
-		this._postUpdates.push(startControls(this.b2World, rayCastConverter!, this.ui, this.b2Preview));
+		this._postUpdates.push(startControls(this.b2World, rayCastConverter!, this.gui, this.b2Preview, this.player));
 
 		/* Test Environment */
 
@@ -106,6 +108,8 @@ export default class Testb2World {
 		// 0.6 meters thick base
 
 		const onDebugMouseDown = (mouseClick: MouseEvent) => {
+			this.gui.rayCastForButton(mouseClick.clientX, mouseClick.clientY);
+
 			this.cursorPosition = this.rayCastConverter!(mouseClick.clientX, mouseClick.clientY);
 			const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
 
@@ -117,7 +121,8 @@ export default class Testb2World {
 					0.2,
 					0.8,
 					["architecture"],
-					["penalty", "environment", "architecture", "goal"]
+					["penalty", "environment", "architecture", "goal"],
+					this.player
 				);
 				pillarBody.SetLinearDamping(5);
 				pillarBody.SetAngularDamping(5);
@@ -131,7 +136,8 @@ export default class Testb2World {
 					clickedb2Space.y,
 					0.2,
 					["architecture"],
-					["penalty", "environment", "architecture", "goal"]
+					["penalty", "environment", "architecture", "goal"],
+					this.player
 				);
 				circleBody.SetLinearDamping(5);
 				circleBody.SetAngularDamping(5);
@@ -151,6 +157,9 @@ export default class Testb2World {
 					body.SetLinearDamping(5);
 					body.SetAngularDamping(5);
 				}
+			}
+			if (isKeyVDown) {
+				this.isStarted = true;
 			}
 
 			this.selectedBody = queryForSingleArchitectureBody(b2World, clickedb2Space);
@@ -207,6 +216,9 @@ export default class Testb2World {
 			case "KeyC":
 				isKeyCDown = down;
 				break;
+			case "KeyV":
+				isKeyVDown = down;
+				break;
 			default:
 				//console.log(code);
 				break;
@@ -243,9 +255,18 @@ export default class Testb2World {
 		}
 
 		processDestructions();
+		processHUD(dt, this.player);
+
+		if (this.isStarted) {
+			this.player.currentTimer -= dt;
+			if (this.player.currentTimer < 0) {
+				this.player.currentTimer = 0;
+				this.isTimerOver = true;
+				this.isStarted = false;
+			}
+		}
 
 		// TODO
-		// processHUD(dt, playerHealth);
 	}
 
 	render(renderer: WebGLRenderer, dt: number) {
@@ -254,7 +275,7 @@ export default class Testb2World {
 			renderer.clear(true, true, true);
 		}
 		renderer.render(this.scene, this.camera);
-		this.ui.render(renderer);
+		this.gui.render(renderer);
 	}
 
 	private initiateScene() {
@@ -278,4 +299,12 @@ export default class Testb2World {
 		this.camera = camera;
 		this.bgColor = bgColor;
 	}
+}
+
+export class Player {
+	currentHealth: number = 5;
+	maxHealth: number = 5;
+
+	currentTimer: number = 30;
+	maxTimer: number = 30;
 }

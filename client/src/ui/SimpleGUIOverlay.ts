@@ -14,6 +14,7 @@ import {
 } from "three";
 import device from "~/device";
 import { canvas } from "~/renderer";
+import TextMesh from "~/text/TextMesh";
 import { removeFromArray } from "~/utils/arrayUtils";
 
 export default class SimpleGUIOverlay {
@@ -41,6 +42,7 @@ export default class SimpleGUIOverlay {
 	private _fullscreenEnterTextureLoading: Promise<Texture> | undefined;
 	private _fullscreenExitTextureLoading: Promise<Texture> | undefined;
 	private _whiteHeartTextureLoading: Promise<Texture> | undefined;
+	private _geometryTimerBar: any;
 
 	constructor() {
 		this._scene.add(this._camera);
@@ -154,6 +156,19 @@ export default class SimpleGUIOverlay {
 		mesh.material = new MeshBasicMaterial({ map: whiteHeartTexture, transparent: true, depthWrite: false });
 		mesh.scale.setScalar(16);
 		return mesh;
+	}
+
+	makeTimerBar(x: number, y: number, isButton?: boolean, uniqueMaterial = true) {
+		const staminaBarMesh = this._makeUI(this.getTimerBarGeometry(), x, y, isButton, uniqueMaterial);
+		staminaBarMesh.material.color.set("white");
+		staminaBarMesh.material.opacity = 0.5;
+
+		const staminaText = new TextMesh("Time:");
+		staminaText.scale.multiplyScalar(100);
+		staminaText.opacity = 2;
+		staminaBarMesh.add(staminaText);
+
+		return staminaBarMesh;
 	}
 
 	makeBiggerCircle(x: number, y: number) {
@@ -270,6 +285,13 @@ export default class SimpleGUIOverlay {
 			);
 		}
 		return this._geometrySqaureSmall;
+	}
+
+	private getTimerBarGeometry() {
+		if (!this._geometryTimerBar) {
+			this._geometryTimerBar = new BoxBufferGeometry(1.0, 1.0);
+		}
+		return this._geometryTimerBar;
 	}
 }
 

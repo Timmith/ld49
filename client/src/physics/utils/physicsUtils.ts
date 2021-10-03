@@ -124,11 +124,11 @@ export function createDynamicBox(
 	height: number,
 	categoryArray?: PBits[],
 	maskArray?: PBits[],
+	entityData?: any,
 	bodyType: BodyType = BodyType.b2_dynamicBody,
 	friction = 0.2,
 	density = 1,
-	isSensor = false,
-	entityData?: any
+	isSensor = false
 ) {
 	const bodyDef = new BodyDef();
 	const fixtureDef = new FixtureDef();

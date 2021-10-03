@@ -45,6 +45,6 @@ export default class TestGraphics3D extends TestLightingScene {
 	}
 	render(renderer: WebGLRenderer, dt: number) {
 		super.render(renderer, dt);
-		this.b2World.ui.render(renderer);
+		this.b2World.gui.render(renderer);
 	}
 }
