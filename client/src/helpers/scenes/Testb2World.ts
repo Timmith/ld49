@@ -39,8 +39,8 @@ export default class Testb2World {
 
 	playerHealth: number = 5;
 
-	bodies: Body[] = [];
-	isTurningShape: boolean;
+	architectureBodies: Body[] = [];
+	isTurningBody: boolean;
 	pivotPoint: Vec2 | undefined;
 
 	protected scene: Scene;
@@ -122,7 +122,7 @@ export default class Testb2World {
 				pillarBody.SetLinearDamping(5);
 				pillarBody.SetAngularDamping(5);
 
-				this.bodies.push(pillarBody);
+				this.architectureBodies.push(pillarBody);
 			}
 			if (isKeyZDown) {
 				const circleBody = createImprovedPhysicsCircle(
@@ -136,18 +136,18 @@ export default class Testb2World {
 				circleBody.SetLinearDamping(5);
 				circleBody.SetAngularDamping(5);
 
-				this.bodies.push(circleBody);
+				this.architectureBodies.push(circleBody);
 			}
 			if (isKeyXDown) {
 				b2World.SetGravity(new Vec2(0, -9.8));
-				for (const body of this.bodies) {
+				for (const body of this.architectureBodies) {
 					body.SetLinearDamping(0);
 					body.SetAngularDamping(0);
 				}
 			}
 			if (isKeyCDown) {
 				b2World.SetGravity(new Vec2(0, 0));
-				for (const body of this.bodies) {
+				for (const body of this.architectureBodies) {
 					body.SetLinearDamping(5);
 					body.SetAngularDamping(5);
 				}
@@ -160,7 +160,7 @@ export default class Testb2World {
 			} else if (!this.selectedBody && this.lastSelectedBody) {
 				this.pivotPoint = clickedb2Space;
 
-				this.isTurningShape = true;
+				this.isTurningBody = true;
 			}
 
 			/* CONSOLE LOG to notify of click in client space versus game space */
@@ -172,7 +172,7 @@ export default class Testb2World {
 		const onDebugMouseUp = (mouseUp: MouseEvent) => {
 			this.selectedBody = undefined;
 			this.pivotPoint = undefined;
-			this.isTurningShape = false;
+			this.isTurningBody = false;
 
 			if (this.lastSelectedBody) {
 				this.lastSelectedBody.SetAngularVelocity(0);
@@ -185,21 +185,6 @@ export default class Testb2World {
 			if (this.selectedBody) {
 				this.selectedBody.SetLinearVelocity(new Vec2(0.0001, 0));
 				// hacky way of getting the currently dragged about piece to interact with other pieces
-			}
-
-			if (!this.selectedBody && this.lastSelectedBody && this.isTurningShape && this.pivotPoint) {
-				const delta =
-					this.pivotPoint
-						.Clone()
-						.SelfSub(this.cursorPosition)
-						.Normalize() * 10;
-				let coefficient: number = 1;
-
-				if (this.pivotPoint.x < this.cursorPosition.x) {
-					coefficient = -1;
-				}
-
-				this.lastSelectedBody.SetAngularVelocity(coefficient * delta);
 			}
 		};
 
@@ -232,20 +217,35 @@ export default class Testb2World {
 		this.scene.updateMatrixWorld(false);
 		this.b2World.Step(dt, 10, 4);
 
+		// Responsible for click and drag of architecture bodies
 		if (this.selectedBody) {
 			this.selectedBody.SetPosition(this.cursorPosition);
+		}
+		// Responsible for rotation of architecture bodies
+		if (!this.selectedBody && this.lastSelectedBody && this.isTurningBody && this.pivotPoint) {
+			const delta =
+				this.pivotPoint
+					.Clone()
+					.SelfSub(this.cursorPosition)
+					.Normalize() * 10;
+			let coefficient: number = 1;
+			if (this.pivotPoint.x < this.cursorPosition.x) {
+				coefficient = -1;
+			}
+			this.lastSelectedBody.SetAngularVelocity(coefficient * delta);
 		}
 
 		for (const pu of this._postUpdates) {
 			pu(dt);
 		}
-
 		if (this.b2Preview) {
 			this.b2Preview.update(dt);
 		}
 
 		processDestructions();
-		// processHUD(dt);
+
+		// TODO
+		// processHUD(dt, playerHealth);
 	}
 
 	render(renderer: WebGLRenderer, dt: number) {
