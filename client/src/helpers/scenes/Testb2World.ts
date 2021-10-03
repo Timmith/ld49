@@ -116,6 +116,13 @@ export default class Testb2World {
 			this.cursorPosition = this.rayCastConverter!(mouseClick.clientX, mouseClick.clientY);
 			const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
 
+			let currentLinearDamping: number = 0;
+			let currentAngularDamping: number = 0;
+			function applyCurrentAtmosphericDamping(body: Body) {
+				body.SetLinearDamping(currentLinearDamping);
+				body.SetAngularDamping(currentAngularDamping);
+			}
+
 			if (isKeyQDown) {
 				createArchitectMeshAndFixtures(
 					clickedb2Space.x,
@@ -126,8 +133,7 @@ export default class Testb2World {
 					["architecture"],
 					["penalty", "environment", "architecture", "goal"]
 				).then(pillar => {
-					pillar.body.SetLinearDamping(5);
-					pillar.body.SetAngularDamping(5);
+					applyCurrentAtmosphericDamping(pillar.body);
 					this.architectureBodies.push(pillar.body);
 				});
 			}
@@ -141,24 +147,20 @@ export default class Testb2World {
 					["penalty", "environment", "architecture", "goal"],
 					this.player
 				);
-				circleBody.SetLinearDamping(5);
-				circleBody.SetAngularDamping(5);
-
+				applyCurrentAtmosphericDamping(circleBody);
 				this.architectureBodies.push(circleBody);
 			}
 			if (isKeyXDown) {
 				b2World.SetGravity(new Vec2(0, -9.8));
-				for (const body of this.architectureBodies) {
-					body.SetLinearDamping(0);
-					body.SetAngularDamping(0);
-				}
+				currentLinearDamping = 0;
+				currentAngularDamping = 0;
+				this.architectureBodies.forEach(applyCurrentAtmosphericDamping);
 			}
 			if (isKeyCDown) {
 				b2World.SetGravity(new Vec2(0, 0));
-				for (const body of this.architectureBodies) {
-					body.SetLinearDamping(5);
-					body.SetAngularDamping(5);
-				}
+				currentLinearDamping = 5;
+				currentAngularDamping = 5;
+				this.architectureBodies.forEach(applyCurrentAtmosphericDamping);
 			}
 			if (isKeyVDown) {
 				this.isStarted = true;
