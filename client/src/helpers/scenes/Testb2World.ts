@@ -6,7 +6,6 @@ import { Box2DPreviewMesh, debugPolygonPhysics } from "~/meshes/Box2DPreviewMesh
 import BaseContactListener from "~/physics/contact listeners/BaseContactListener";
 import { getBodyEventManager } from "~/physics/managers/bodyEventManager";
 import { processDestructions } from "~/physics/managers/destructionManager";
-import { processHUD } from "~/physics/managers/hudManager";
 import {
 	convertTob2Space,
 	createDynamicBox,
@@ -34,8 +33,15 @@ let isKeyCDown: boolean = false;
 export default class Testb2World {
 	autoClear = true;
 	ui = new SimpleGUIOverlay();
-	selectedBody: Body | undefined;
 	cursorPosition: Vec2;
+	selectedBody: Body | undefined;
+	lastSelectedBody: Body | undefined;
+
+	playerHealth: number = 5;
+
+	bodies: Body[] = [];
+	isTurningShape: boolean;
+	pivotPoint: Vec2 | undefined;
 
 	protected scene: Scene;
 	protected camera: Camera;
@@ -100,10 +106,11 @@ export default class Testb2World {
 		// 0.6 meters thick base
 
 		const onDebugMouseDown = (mouseClick: MouseEvent) => {
+			this.cursorPosition = this.rayCastConverter!(mouseClick.clientX, mouseClick.clientY);
 			const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
 
 			if (isKeyQDown) {
-				createDynamicBox(
+				const pillarBody = createDynamicBox(
 					b2World,
 					clickedb2Space.x,
 					clickedb2Space.y,
@@ -112,9 +119,13 @@ export default class Testb2World {
 					["architecture"],
 					["penalty", "environment", "architecture", "goal"]
 				);
+				pillarBody.SetLinearDamping(5);
+				pillarBody.SetAngularDamping(5);
+
+				this.bodies.push(pillarBody);
 			}
 			if (isKeyZDown) {
-				createImprovedPhysicsCircle(
+				const circleBody = createImprovedPhysicsCircle(
 					b2World,
 					clickedb2Space.x,
 					clickedb2Space.y,
@@ -122,15 +133,35 @@ export default class Testb2World {
 					["architecture"],
 					["penalty", "environment", "architecture", "goal"]
 				);
+				circleBody.SetLinearDamping(5);
+				circleBody.SetAngularDamping(5);
+
+				this.bodies.push(circleBody);
 			}
 			if (isKeyXDown) {
 				b2World.SetGravity(new Vec2(0, -9.8));
+				for (const body of this.bodies) {
+					body.SetLinearDamping(0);
+					body.SetAngularDamping(0);
+				}
 			}
 			if (isKeyCDown) {
 				b2World.SetGravity(new Vec2(0, 0));
+				for (const body of this.bodies) {
+					body.SetLinearDamping(5);
+					body.SetAngularDamping(5);
+				}
 			}
 
 			this.selectedBody = queryForSingleArchitectureBody(b2World, clickedb2Space);
+
+			if (this.selectedBody) {
+				this.lastSelectedBody = this.selectedBody;
+			} else if (!this.selectedBody && this.lastSelectedBody) {
+				this.pivotPoint = clickedb2Space;
+
+				this.isTurningShape = true;
+			}
 
 			/* CONSOLE LOG to notify of click in client space versus game space */
 			// console.log(` Client Space				VS		Game Space			VS		distFromPlayer
@@ -140,6 +171,12 @@ export default class Testb2World {
 
 		const onDebugMouseUp = (mouseUp: MouseEvent) => {
 			this.selectedBody = undefined;
+			this.pivotPoint = undefined;
+			this.isTurningShape = false;
+
+			if (this.lastSelectedBody) {
+				this.lastSelectedBody.SetAngularVelocity(0);
+			}
 		};
 
 		const onDebugMouseMove = (mouseMove: MouseEvent) => {
@@ -148,6 +185,21 @@ export default class Testb2World {
 			if (this.selectedBody) {
 				this.selectedBody.SetLinearVelocity(new Vec2(0.0001, 0));
 				// hacky way of getting the currently dragged about piece to interact with other pieces
+			}
+
+			if (!this.selectedBody && this.lastSelectedBody && this.isTurningShape && this.pivotPoint) {
+				const delta =
+					this.pivotPoint
+						.Clone()
+						.SelfSub(this.cursorPosition)
+						.Normalize() * 10;
+				let coefficient: number = 1;
+
+				if (this.pivotPoint.x < this.cursorPosition.x) {
+					coefficient = -1;
+				}
+
+				this.lastSelectedBody.SetAngularVelocity(coefficient * delta);
 			}
 		};
 

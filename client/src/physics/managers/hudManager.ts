@@ -3,11 +3,11 @@ import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 import { removeFromArray } from "~/utils/arrayUtils";
 
 const HUDBodies: Body[] = [];
-let gui: SimpleGUIOverlay | undefined;
+// let gui: SimpleGUIOverlay | undefined;
 // fullScreenButton
 
 export async function registerHUD(passedGUI: SimpleGUIOverlay) {
-	gui = passedGUI;
+	// gui = passedGUI;
 	// this.fullScreenButton = await initializeFullscreenButton();
 }
 
