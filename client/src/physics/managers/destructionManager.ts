@@ -1,6 +1,7 @@
 import { Fixture } from "box2d";
 
 import { getBodyEventManager } from "./bodyEventManager";
+import { getBodyMeshEventManager } from "./bodyMeshEventManager";
 
 const destructionQueue: Fixture[] = [];
 
@@ -28,6 +29,7 @@ function destructBody(fixt: Fixture) {
 
 	try {
 		getBodyEventManager().destroyBody(body);
+		getBodyMeshEventManager().destroyBody(body);
 	} catch (e) {
 		console.log(e);
 	}

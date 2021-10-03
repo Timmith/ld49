@@ -23,7 +23,8 @@ class BodyMeshEventManager {
 		this.bodiesToMeshes.set(body, mesh);
 	}
 
-	destroyBody(body: Body, mesh: Object3D) {
+	destroyBody(body: Body) {
+		const mesh = this.bodiesToMeshes.get(body)!;
 		this.bodiesToMeshes.delete(body);
 		for (const callback of this.destroyCallbacks) {
 			callback(body, mesh);

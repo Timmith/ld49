@@ -85,7 +85,6 @@ class ArchitectureModelFactory {
 		const mesh = cloneMeshByName(this._gltf, "column1");
 		const pos = params.body.GetPosition();
 		mesh.position.set(pos.x, -pos.y, 0);
-		this._bodyMeshMap.set(params.body, mesh);
 		if (params.addPivot) {
 			const pivot = new Object3D();
 			pivot.add(mesh);
@@ -101,9 +100,11 @@ class ArchitectureModelFactory {
 			matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
 			pivot.rotateX(Math.PI * 0.5);
 			pivot.scale.multiplyScalar(GLTF_MESH_SCALE);
+			this._bodyMeshMap.set(params.body, pivot);
 			return pivot;
 		} else {
 			mesh.scale.multiplyScalar(GLTF_MESH_SCALE);
+			this._bodyMeshMap.set(params.body, mesh);
 			return mesh;
 		}
 	}

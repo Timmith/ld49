@@ -19,7 +19,6 @@ import {
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
 import { getUrlColor } from "~/utils/location";
-import { randInt } from "~/utils/math";
 import { RayCastConverter } from "~/utils/RayCastConverter";
 
 import { startControls } from "../../controllers/startControls";
@@ -48,6 +47,14 @@ export default class Testb2World {
 	pivotPoint: Vec2 | undefined;
 	isStarted: boolean = false;
 	isTimerOver: boolean = false;
+
+	pieceSpawnPoints5: Vec2[] = [
+		new Vec2(-1.55, -0.35),
+		new Vec2(-0.95, 0.65),
+		new Vec2(0.0, 1.0),
+		new Vec2(0.95, 0.65),
+		new Vec2(1.55, -0.35)
+	];
 
 	protected scene: Scene;
 	protected camera: Camera;
@@ -95,8 +102,30 @@ export default class Testb2World {
 		createStaticBox(this.b2World, 1, -0.9, 0.2, 0.1);
 
 		createSensorBox(this.b2World, 0, -1.5, 10, 0.1, ["penalty"], ["architecture"]);
-		createSensorBox(this.b2World, 0, 1, 10, 0.1, ["goal"], ["architecture"]);
+		createSensorBox(this.b2World, 0, -0.25, 10, 0.1, ["goal"], ["architecture"]);
 
+		this.pieceSpawnPoints5.forEach(vec2 => {
+			createArchitectMeshAndFixtures(
+				vec2.x,
+				vec2.y,
+				"column1",
+				// "collider" + randInt(3, 1),
+				"collider1",
+				["architecture"],
+				["penalty", "environment", "architecture", "goal"],
+				this.player
+			).then(pillar => {
+				applyCurrentAtmosphericDamping(pillar.body);
+				this.architectureBodies.push(pillar.body);
+			});
+		});
+
+		let currentLinearDamping: number = 0;
+		let currentAngularDamping: number = 0;
+		function applyCurrentAtmosphericDamping(body: Body) {
+			body.SetLinearDamping(currentLinearDamping);
+			body.SetAngularDamping(currentAngularDamping);
+		}
 		// const cm = b2World.GetContactManager();
 		// let contacts = cm.m_contactList;
 		// while (contacts) {
@@ -116,22 +145,16 @@ export default class Testb2World {
 			this.cursorPosition = this.rayCastConverter!(mouseClick.clientX, mouseClick.clientY);
 			const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
 
-			let currentLinearDamping: number = 0;
-			let currentAngularDamping: number = 0;
-			function applyCurrentAtmosphericDamping(body: Body) {
-				body.SetLinearDamping(currentLinearDamping);
-				body.SetAngularDamping(currentAngularDamping);
-			}
-
 			if (isKeyQDown) {
 				createArchitectMeshAndFixtures(
 					clickedb2Space.x,
 					clickedb2Space.y,
 					"column1",
-					"collider" + randInt(3, 1),
-					// "collider1",
+					// "collider" + randInt(3, 1),
+					"collider1",
 					["architecture"],
-					["penalty", "environment", "architecture", "goal"]
+					["penalty", "environment", "architecture", "goal"],
+					this.player
 				).then(pillar => {
 					applyCurrentAtmosphericDamping(pillar.body);
 					this.architectureBodies.push(pillar.body);
@@ -177,9 +200,9 @@ export default class Testb2World {
 			}
 
 			/* CONSOLE LOG to notify of click in client space versus game space */
-			// console.log(` Client Space				VS		Game Space			VS		distFromPlayer
-			// 		 X: ${mouseClick.clientX}			X: ${clickedb2Space.x}		dist: ${distanceFromPlayer}
-			// 		 Y: ${mouseClick.clientY}			Y: ${clickedb2Space.y}`);
+			console.log(` Client Space				VS		Game Space			
+					 X: ${mouseClick.clientX}			X: ${clickedb2Space.x}		
+					 Y: ${mouseClick.clientY}			Y: ${clickedb2Space.y}`);
 		};
 
 		const onDebugMouseUp = (mouseUp: MouseEvent) => {
