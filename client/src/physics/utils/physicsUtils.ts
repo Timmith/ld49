@@ -157,30 +157,63 @@ export function createDynamicBox(
 	return boxBody;
 }
 
-export async function createArchitectMeshAndFixtures(
-	x: number,
-	y: number,
-	meshName: string,
-	colliderName: string = "collider",
-	categoryArray?: PBits[],
-	maskArray?: PBits[],
-	entityData?: any,
-	bodyType: BodyType = BodyType.b2_dynamicBody
-) {
+export interface ArchitectParams {
+	x: number;
+	y: number;
+	angle: number;
+	meshName: string;
+	colliderName?: string;
+	categoryArray?: PBits[];
+	maskArray?: PBits[];
+	bodyType?: BodyType;
+}
+
+export function isArchitectParams(params: any): params is ArchitectParams {
+	if (typeof params !== "object") {
+		return false;
+	}
+	if (typeof params.x !== "number") {
+		return false;
+	}
+	if (typeof params.y !== "number") {
+		return false;
+	}
+	if (typeof params.angle !== "number") {
+		return false;
+	}
+	if (typeof params.meshName !== "string") {
+		return false;
+	}
+	if (params.colliderName !== undefined && typeof params.colliderName !== "string") {
+		return false;
+	}
+	// categoryArray?
+	// maskArray?
+	// bodyType?
+	return true;
+}
+
+export async function createArchitectMeshAndFixtures(params: ArchitectParams) {
 	const bodyDef = new BodyDef();
 	bodyDef.fixedRotation = false;
-	bodyDef.type = bodyType;
+	bodyDef.type = params.bodyType ?? BodyType.b2_dynamicBody;
+	bodyDef.userData = params;
 
-	bodyDef.userData = entityData;
 	const body = getBodyEventManager().createBody(bodyDef);
+	body.SetPositionXY(params.x, params.y);
+	body.SetAngle(params.angle);
 
-	const mesh = await getArchitectMeshAndFixtures(body, meshName, colliderName, categoryArray, maskArray);
-	body.SetPositionXY(x, y);
-	getBodyMeshEventManager().createBody(body, mesh);
-	return {
+	const mesh = await getArchitectMeshAndFixtures(
 		body,
-		mesh
-	};
+		params.meshName,
+		params.colliderName ?? "collider",
+		params.categoryArray,
+		params.maskArray
+	);
+
+	getBodyMeshEventManager().createBody(body, mesh);
+
+	return { body, mesh };
 }
 
 export type SensorCallback = (sensor: Fixture, rigidBody: Fixture) => void;
