@@ -57,7 +57,7 @@ const testClasses: { [K: string]: any } = {
 /* inUrl:[?test=testScenario] selector */
 let TestClass: new () => BaseTestScene = TestLightingScene;
 
-const testParam = getUrlParam("test") || "b2Preview";
+const testParam = getUrlParam("test") || "graphics3D";
 const targetFPS = getUrlInt("fps", 60, 1, 240);
 
 if (testClasses.hasOwnProperty(testParam)) {
