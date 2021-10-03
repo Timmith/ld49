@@ -307,7 +307,7 @@ export function deconstructConcavePath3(verts: Vector2[]) {
 
 const __origin = new Vector2();
 export default function makePolygonPhysics(
-	world: World,
+	body: Body | undefined,
 	verts: Vector2[],
 	type: BodyType = BodyType.b2_staticBody,
 	position = __origin,
@@ -315,9 +315,10 @@ export default function makePolygonPhysics(
 ) {
 	const bodyDef = new BodyDef();
 	bodyDef.type = type;
-	const body = getBodyEventManager().createBody(bodyDef);
+	if (!body) {
+		body = getBodyEventManager().createBody(bodyDef);
+	}
 	body.SetPositionXY(position.x, position.y);
-	verts.forEach(v => createStaticBox(world, v.x + position.x, v.y + position.y, 0.002, 0.002));
 	const subVerts2 = deconstructConcavePathMethod(verts);
 	for (const subVerts of subVerts2) {
 		if (subVerts.length < 3) {
@@ -325,7 +326,7 @@ export default function makePolygonPhysics(
 		}
 		const fixtureDef = new FixtureDef();
 		const shape = new PolygonShape();
-		shape._Set(i => subVerts[i], subVerts.length);
+		shape.Set(subVerts);
 		fixtureDef.shape = shape;
 		fixtureDef.filter.categoryBits = makeBitMask(["environment"]);
 		body.CreateFixture(fixtureDef);

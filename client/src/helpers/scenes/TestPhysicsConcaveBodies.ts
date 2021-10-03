@@ -24,7 +24,7 @@ export default class TestConcaveBodiesScene extends TestPhysicsScene {
 
 		const wobblyCircleVerts = makeWobblyCircleShapePath(0.1, 0.25, 40, 6);
 		makePolygonPhysics(
-			this.b2World,
+			undefined,
 			wobblyCircleVerts,
 			BodyType.b2_staticBody,
 			new Vector2(-0.5, 0),
@@ -33,7 +33,7 @@ export default class TestConcaveBodiesScene extends TestPhysicsScene {
 
 		const testShape = makeWobblyCircleShapePath(0.2, 0.125, 12, 3, 0.25);
 		const pos = new Vector2(-1, 0);
-		makePolygonPhysics(this.b2World, testShape, BodyType.b2_staticBody, pos, deconstructConcavePath3);
+		makePolygonPhysics(undefined, testShape, BodyType.b2_staticBody, pos, deconstructConcavePath3);
 	}
 
 	update(dt: number) {

@@ -6,7 +6,6 @@
   <title>Pillars of Faith</title>
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-
   <link rel="apple-touch-icon" sizes="180x180" href="./images/favicon/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="./images/favicon/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="./images/favicon/favicon-16x16.png">
@@ -121,7 +120,6 @@
 </head>
 
 <body>
-
   <a href="https://github.com/timmith/ld49" class="github-corner" aria-label="View source on GitHub">
     <svg width="80" height="80" viewBox="0 0 250 250"
       style="fill:#FD6C6C; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
@@ -167,11 +165,9 @@
       }
     }
   </style>
-
   <% for (var chunk in htmlWebpackPlugin.files.chunks) { %>
     <script type="text/javascript" src=".<%= htmlWebpackPlugin.files.chunks[chunk].entry %>"></script>
     <% } %>
-
 </body>
 
 </html>

@@ -1,21 +1,35 @@
 import { Body } from "box2d";
-import { Mesh } from "three";
+import { Mesh, Object3D } from "three";
 import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { PBits } from "~/physics/utils/physicsUtils";
 import { cloneMeshByName } from "~/utils/cloneMeshByName";
 
+interface RequestParams {
+	body: Body;
+	meshName: string;
+	addPivot?: boolean;
+	categoryArray?: PBits[];
+	maskArray?: PBits[];
+}
+
+class QueuedParams {
+	constructor(public params: RequestParams, public resolve: (wall: Object3D) => void) {
+		//
+	}
+}
 class ArchitectureModelFactory {
 	private _status: "ready" | "initializing" | "not started" = "not started";
 	private _gltf: GLTF;
-	private _bodiesPromisedMeshes: Map<Body, (wall: Mesh) => void> = new Map();
-	private _bodyMeshMap: Map<Body, Mesh> = new Map();
+	private _bodiesPromisedMeshes: Map<Body, QueuedParams> = new Map();
+	private _bodyMeshMap: Map<Body, Object3D> = new Map();
 
-	async requestMesh(body: Body) {
-		return new Promise<Mesh>(resolve => {
+	async requestMesh(params: RequestParams) {
+		return new Promise<Object3D>(resolve => {
 			if (this._status === "ready") {
-				const mesh = this._makeMesh(body);
+				const mesh = this._makeMesh(params);
 				resolve(mesh);
 			} else {
-				this._bodiesPromisedMeshes.set(body, resolve);
+				this._bodiesPromisedMeshes.set(params.body, new QueuedParams(params, resolve));
 				if (this._status === "not started") {
 					this._init();
 				}
@@ -46,27 +60,37 @@ class ArchitectureModelFactory {
 			for (const child of gltf.scene.children) {
 				child.traverse(obj => {
 					if (obj instanceof Mesh) {
-						obj.castShadow = true;
-						obj.receiveShadow = true;
+						if (obj.name.includes("collider")) {
+							obj.visible = false;
+						} else {
+							obj.castShadow = true;
+							obj.receiveShadow = true;
+						}
 					}
 				});
 			}
 
 			this._status = "ready";
-			this._bodiesPromisedMeshes.forEach((resolve, body) => {
-				resolve(this._makeMesh(body));
+			this._bodiesPromisedMeshes.forEach((params, body) => {
+				params.resolve(this._makeMesh(params.params));
 			});
 		} else {
 			throw new Error("cannot initialize twice");
 		}
 	}
 
-	private _makeMesh(body: Body) {
+	private _makeMesh(params: RequestParams) {
 		const mesh = cloneMeshByName(this._gltf, "column1");
-		const pos = body.GetPosition();
+		const pos = params.body.GetPosition();
 		mesh.position.set(pos.x, -pos.y, 0);
-		this._bodyMeshMap.set(body, mesh);
-		return mesh;
+		this._bodyMeshMap.set(params.body, mesh);
+		if (params.addPivot) {
+			const pivot = new Object3D();
+			pivot.add(mesh);
+			return pivot;
+		} else {
+			return mesh;
+		}
 	}
 }
 

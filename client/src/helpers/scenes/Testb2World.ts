@@ -7,6 +7,7 @@ import BaseContactListener from "~/physics/contact listeners/BaseContactListener
 import { getBodyEventManager } from "~/physics/managers/bodyEventManager";
 import { processDestructions } from "~/physics/managers/destructionManager";
 import { processHUD } from "~/physics/managers/hudManager";
+import { getArchitectMeshAndFixtures } from "~/physics/utils/meshPhysicsUtils";
 import {
 	convertTob2Space,
 	createDynamicBox,
@@ -18,6 +19,7 @@ import {
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
 import { getUrlColor } from "~/utils/location";
+import { rand } from "~/utils/math";
 import { RayCastConverter } from "~/utils/RayCastConverter";
 
 import { startControls } from "../../controllers/startControls";
@@ -124,6 +126,16 @@ export default class Testb2World {
 					["penalty", "environment", "architecture", "goal"],
 					this.player
 				);
+
+				pillarBody.DestroyFixture(pillarBody.GetFixtureList()!);
+				getArchitectMeshAndFixtures(
+					pillarBody,
+					"column1",
+					"collider" + Math.round(rand(0.51, 3.49)),
+					["architecture"],
+					["penalty", "environment", "architecture", "goal"]
+				);
+
 				pillarBody.SetLinearDamping(5);
 				pillarBody.SetAngularDamping(5);
 

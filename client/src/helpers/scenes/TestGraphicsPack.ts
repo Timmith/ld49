@@ -1,17 +1,17 @@
 import { Body, BodyType } from "box2d";
-import { Mesh, Scene } from "three";
+import { Object3D, Scene } from "three";
 import { architectureModelFactory } from "~/factories/ArchitectureModelFactory";
 import { getBodyEventManager } from "~/physics/managers/bodyEventManager";
 import { __tileSize } from "~/settings/constants";
 
 export default class TestGraphicsPack {
 	cursorBody: Body;
-	private bodyMeshMap: Map<Body, Mesh> = new Map();
+	private bodyMeshMap: Map<Body, Object3D> = new Map();
 
 	constructor(scene: Scene) {
 		getBodyEventManager().startListeningForCreate(async body => {
 			if (body.GetType() === BodyType.b2_dynamicBody) {
-				const mesh = await architectureModelFactory.requestMesh(body);
+				const mesh = await architectureModelFactory.requestMesh({ body, meshName: "column1" });
 				this.bodyMeshMap.set(body, mesh);
 				scene.add(mesh);
 			}

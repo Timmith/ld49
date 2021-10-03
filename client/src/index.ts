@@ -13,6 +13,7 @@ import TestLightingScene from "./helpers/scenes/TestLighting";
 import TestLitModelsScene from "./helpers/scenes/TestLitModels";
 import TestPhysicsScene from "./helpers/scenes/TestPhysics";
 import TestPhysicsConcaveBodiesScene from "./helpers/scenes/TestPhysicsConcaveBodies";
+import TestPhysicsMeshDerivativeBodiesScene from "./helpers/scenes/TestPhysicsMeshDerivativeBodies";
 import TestPhysicsPNGScene from "./helpers/scenes/TestPhysicsPNG";
 import TestStencilsScene from "./helpers/scenes/TestStencils";
 import TestTextScene from "./helpers/scenes/TestText";
@@ -45,6 +46,7 @@ const testClasses: { [K: string]: any } = {
 	physics: TestPhysicsScene,
 	textPhysics: TestTextPhysicsScene,
 	physicsConcave: TestPhysicsConcaveBodiesScene,
+	physicsMeshDerivatives: TestPhysicsMeshDerivativeBodiesScene,
 	physicsPNG: TestPhysicsPNGScene,
 	stencils: TestStencilsScene,
 	text: TestTextScene,
