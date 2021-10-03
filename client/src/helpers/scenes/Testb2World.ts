@@ -140,16 +140,16 @@ export default class Testb2World {
 		this.currentAngularDamping = 5;
 
 		this.pieceSpawnPoints9.forEach(vec2 => {
-			createArchitectMeshAndFixtures(
-				vec2.x,
-				vec2.y,
-				"column1",
-				// "collider" + randInt(3, 1),
-				"collider1",
-				["architecture"],
-				["penalty", "environment", "architecture", "goal"],
-				this.player
-			).then(pillar => {
+			createArchitectMeshAndFixtures({
+				x: vec2.x,
+				y: vec2.y,
+				angle: 0,
+				meshName: "column1",
+				// colliderName: "collider" + randInt(3, 1),
+				colliderName: "collider1",
+				categoryArray: ["architecture"],
+				maskArray: ["penalty", "environment", "architecture", "goal"]
+			}).then(pillar => {
 				this.applyCurrentAtmosphericDamping(pillar.body);
 				this.activeArchitectureBodies.push(pillar.body);
 			});
@@ -180,16 +180,16 @@ export default class Testb2World {
 			const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
 
 			if (isKeyQDown) {
-				createArchitectMeshAndFixtures(
-					clickedb2Space.x,
-					clickedb2Space.y,
-					"column1",
-					// "collider" + randInt(3, 1),
-					"collider1",
-					["architecture"],
-					["penalty", "environment", "architecture", "goal"],
-					this.player
-				).then(pillar => {
+				createArchitectMeshAndFixtures({
+					x: clickedb2Space.x,
+					y: clickedb2Space.y,
+					angle: 0,
+					meshName: "column1",
+					// colliderName: "collider" + randInt(3, 1),
+					colliderName: "collider1",
+					categoryArray: ["architecture"],
+					maskArray: ["penalty", "environment", "architecture", "goal"]
+				}).then(pillar => {
 					this.applyCurrentAtmosphericDamping(pillar.body);
 					this.activeArchitectureBodies.push(pillar.body);
 				});
@@ -372,16 +372,16 @@ export default class Testb2World {
 			this.turnGravityOff(this.b2World, this.applyCurrentAtmosphericDamping);
 			taskTimer.add(() => {
 				this.pieceSpawnPoints9.forEach(vec2 => {
-					createArchitectMeshAndFixtures(
-						vec2.x,
-						vec2.y + this.b2Preview.offset.y,
-						"column1",
-						// "collider" + randInt(3, 1),
-						"collider1",
-						["architecture"],
-						["penalty", "environment", "architecture", "goal"],
-						this.player
-					).then(pillar => {
+					createArchitectMeshAndFixtures({
+						x: vec2.x,
+						y: vec2.y + this.b2Preview.offset.y,
+						angle: 0,
+						meshName: "column1",
+						// colliderName: "collider" + randInt(3, 1),
+						colliderName: "collider1",
+						categoryArray: ["architecture"],
+						maskArray: ["penalty", "environment", "architecture", "goal"]
+					}).then(pillar => {
 						this.applyCurrentAtmosphericDamping(pillar.body);
 						this.activeArchitectureBodies.push(pillar.body);
 					});
@@ -423,16 +423,16 @@ export default class Testb2World {
 			this.turnGravityOff(this.b2World, this.applyCurrentAtmosphericDamping);
 			taskTimer.add(() => {
 				this.pieceSpawnPoints9.forEach(vec2 => {
-					createArchitectMeshAndFixtures(
-						vec2.x,
-						vec2.y + this.b2Preview.offset.y,
-						"column1",
-						// "collider" + randInt(3, 1),
-						"collider1",
-						["architecture"],
-						["penalty", "environment", "architecture", "goal"],
-						this.player
-					).then(pillar => {
+					createArchitectMeshAndFixtures({
+						x: vec2.x,
+						y: vec2.y + this.b2Preview.offset.y,
+						angle: 0,
+						meshName: "column1",
+						// colliderName: "collider" + randInt(3, 1),
+						colliderName: "collider1",
+						categoryArray: ["architecture"],
+						maskArray: ["penalty", "environment", "architecture", "goal"]
+					}).then(pillar => {
 						this.applyCurrentAtmosphericDamping(pillar.body);
 						this.activeArchitectureBodies.push(pillar.body);
 					});
