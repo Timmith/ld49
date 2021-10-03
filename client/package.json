@@ -23,7 +23,6 @@
     "@types/canvasjs": "^1.9.6",
     "@types/socket.io-client": "^1.4.36",
     "@types/three": "^0.126.1",
-    "alphashape-ts": "^1.0.0",
     "box2d": "flyover/box2d.ts#14fa5fb72c96b4c1f38e7f8af94e669e928d77bf",
     "socket.io-client": "^4.0.0",
     "three": "^0.126.1",
