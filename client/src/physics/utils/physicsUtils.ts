@@ -21,7 +21,9 @@ import TextMesh from "~/text/TextMesh";
 import { getArrNext, getArrWrap } from "../../utils/arrayUtils";
 import { wrap } from "../../utils/math";
 import { getBodyEventManager } from "../managers/bodyEventManager";
+import { getBodyMeshEventManager } from "../managers/bodyMeshEventManager";
 
+import { getArchitectMeshAndFixtures } from "./meshPhysicsUtils";
 import { SingleArchitectureBodyQueryCallBack, SingleEnvironmentBlockQueryCallBack } from "./queryUtils";
 
 export function createPhysicBoxFromPixels(
@@ -153,6 +155,32 @@ export function createDynamicBox(
 	fixtureDef.shape = templateRect;
 	boxBody.CreateFixture(fixtureDef);
 	return boxBody;
+}
+
+export async function createArchitectMeshAndFixtures(
+	x: number,
+	y: number,
+	meshName: string,
+	colliderName: string = "collider",
+	categoryArray?: PBits[],
+	maskArray?: PBits[],
+	entityData?: any,
+	bodyType: BodyType = BodyType.b2_dynamicBody
+) {
+	const bodyDef = new BodyDef();
+	bodyDef.fixedRotation = false;
+	bodyDef.type = bodyType;
+
+	bodyDef.userData = entityData;
+	const body = getBodyEventManager().createBody(bodyDef);
+
+	const mesh = await getArchitectMeshAndFixtures(body, meshName, colliderName, categoryArray, maskArray);
+	body.SetPositionXY(x, y);
+	getBodyMeshEventManager().createBody(body, mesh);
+	return {
+		body,
+		mesh
+	};
 }
 
 export type SensorCallback = (sensor: Fixture, rigidBody: Fixture) => void;

@@ -1,19 +1,22 @@
 import { Body } from "box2d";
 import { Mesh, Object3D } from "three";
 import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { findCollider } from "~/physics/utils/meshColliderUtils";
 import { PBits } from "~/physics/utils/physicsUtils";
+import { GLTF_MESH_SCALE } from "~/settings/constants";
 import { cloneMeshByName } from "~/utils/cloneMeshByName";
 
 interface RequestParams {
 	body: Body;
 	meshName: string;
+	colliderName: string;
 	addPivot?: boolean;
 	categoryArray?: PBits[];
 	maskArray?: PBits[];
 }
 
 class QueuedParams {
-	constructor(public params: RequestParams, public resolve: (wall: Object3D) => void) {
+	constructor(public params: RequestParams, public resolve: (obj: Object3D) => void) {
 		//
 	}
 }
@@ -26,8 +29,7 @@ class ArchitectureModelFactory {
 	async requestMesh(params: RequestParams) {
 		return new Promise<Object3D>(resolve => {
 			if (this._status === "ready") {
-				const mesh = this._makeMesh(params);
-				resolve(mesh);
+				resolve(this._makeMesh(params));
 			} else {
 				this._bodiesPromisedMeshes.set(params.body, new QueuedParams(params, resolve));
 				if (this._status === "not started") {
@@ -71,8 +73,8 @@ class ArchitectureModelFactory {
 			}
 
 			this._status = "ready";
-			this._bodiesPromisedMeshes.forEach((params, body) => {
-				params.resolve(this._makeMesh(params.params));
+			this._bodiesPromisedMeshes.forEach((queuedParams, body) => {
+				queuedParams.resolve(this._makeMesh(queuedParams.params));
 			});
 		} else {
 			throw new Error("cannot initialize twice");
@@ -87,8 +89,21 @@ class ArchitectureModelFactory {
 		if (params.addPivot) {
 			const pivot = new Object3D();
 			pivot.add(mesh);
+			const collider = findCollider(mesh, params.colliderName);
+			for (let i = mesh.children.length; i >= 0; i--) {
+				const child = mesh.children[i];
+				if (child !== collider) {
+					mesh.remove(child);
+				}
+			}
+			collider.updateMatrix();
+			const matrix = collider.matrix.clone().invert();
+			matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
+			pivot.rotateX(Math.PI * 0.5);
+			pivot.scale.multiplyScalar(GLTF_MESH_SCALE);
 			return pivot;
 		} else {
+			mesh.scale.multiplyScalar(GLTF_MESH_SCALE);
 			return mesh;
 		}
 	}

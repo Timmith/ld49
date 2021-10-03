@@ -473,8 +473,8 @@ const createTextGeometry = (
 		charIdx = end;
 	});
 
-	geometry.addAttribute("color", new BufferAttribute(colors, 3));
-	geometry.addAttribute("weight", new BufferAttribute(weights, 1));
+	geometry.setAttribute("color", new BufferAttribute(colors, 3));
+	geometry.setAttribute("weight", new BufferAttribute(weights, 1));
 
 	const x = settings.bakedOffset ? settings.bakedOffset.x : 0;
 	const y = settings.bakedOffset ? settings.bakedOffset.y : 0;

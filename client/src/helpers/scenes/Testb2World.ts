@@ -5,12 +5,12 @@ import getKeyboardInput from "~/input/getKeyboardInput";
 import { Box2DPreviewMesh, debugPolygonPhysics } from "~/meshes/Box2DPreviewMesh";
 import BaseContactListener from "~/physics/contact listeners/BaseContactListener";
 import { getBodyEventManager } from "~/physics/managers/bodyEventManager";
+import { getBodyMeshEventManager } from "~/physics/managers/bodyMeshEventManager";
 import { processDestructions } from "~/physics/managers/destructionManager";
 import { processHUD } from "~/physics/managers/hudManager";
-import { getArchitectMeshAndFixtures } from "~/physics/utils/meshPhysicsUtils";
 import {
 	convertTob2Space,
-	createDynamicBox,
+	createArchitectMeshAndFixtures,
 	createImprovedPhysicsCircle,
 	createSensorBox,
 	createStaticBox,
@@ -19,7 +19,7 @@ import {
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
 import { getUrlColor } from "~/utils/location";
-import { rand } from "~/utils/math";
+import { randInt } from "~/utils/math";
 import { RayCastConverter } from "~/utils/RayCastConverter";
 
 import { startControls } from "../../controllers/startControls";
@@ -52,9 +52,9 @@ export default class Testb2World {
 	protected scene: Scene;
 	protected camera: Camera;
 	protected bgColor: Color;
-
-	protected b2World: World;
 	protected b2Preview: Box2DPreviewMesh | undefined = undefined;
+
+	private b2World: World;
 
 	private _postUpdates: Array<(dt: number) => void> = [];
 
@@ -63,6 +63,7 @@ export default class Testb2World {
 
 		const b2World = new World(new Vec2(0, 0));
 		getBodyEventManager().init(b2World);
+		getBodyMeshEventManager().init(b2World);
 
 		// if (getUrlParam("test") === "b2Preview") {
 		const b2Preview = new Box2DPreviewMesh(b2World);
@@ -116,30 +117,19 @@ export default class Testb2World {
 			const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
 
 			if (isKeyQDown) {
-				const pillarBody = createDynamicBox(
-					b2World,
+				createArchitectMeshAndFixtures(
 					clickedb2Space.x,
 					clickedb2Space.y,
-					0.2,
-					0.8,
-					["architecture"],
-					["penalty", "environment", "architecture", "goal"],
-					this.player
-				);
-
-				pillarBody.DestroyFixture(pillarBody.GetFixtureList()!);
-				getArchitectMeshAndFixtures(
-					pillarBody,
 					"column1",
-					"collider" + Math.round(rand(0.51, 3.49)),
+					"collider" + randInt(3, 1),
+					// "collider1",
 					["architecture"],
 					["penalty", "environment", "architecture", "goal"]
-				);
-
-				pillarBody.SetLinearDamping(5);
-				pillarBody.SetAngularDamping(5);
-
-				this.architectureBodies.push(pillarBody);
+				).then(pillar => {
+					pillar.body.SetLinearDamping(5);
+					pillar.body.SetAngularDamping(5);
+					this.architectureBodies.push(pillar.body);
+				});
 			}
 			if (isKeyZDown) {
 				const circleBody = createImprovedPhysicsCircle(

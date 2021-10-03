@@ -1,23 +1,20 @@
-import { Body, BodyType } from "box2d";
+import { Body } from "box2d";
 import { Object3D, Scene } from "three";
 import { architectureModelFactory } from "~/factories/ArchitectureModelFactory";
-import { getBodyEventManager } from "~/physics/managers/bodyEventManager";
+import { getBodyMeshEventManager } from "~/physics/managers/bodyMeshEventManager";
 import { __tileSize } from "~/settings/constants";
 
 export default class TestGraphicsPack {
 	cursorBody: Body;
-	private bodyMeshMap: Map<Body, Object3D> = new Map();
+	bodyMeshMap: Map<Body, Object3D> = new Map();
 
 	constructor(scene: Scene) {
-		getBodyEventManager().startListeningForCreate(async body => {
-			if (body.GetType() === BodyType.b2_dynamicBody) {
-				const mesh = await architectureModelFactory.requestMesh({ body, meshName: "column1" });
-				this.bodyMeshMap.set(body, mesh);
-				scene.add(mesh);
-			}
+		getBodyMeshEventManager().startListeningForCreate((body, mesh) => {
+			scene.add(mesh);
+			this.bodyMeshMap.set(body, mesh);
 		});
 
-		getBodyEventManager().startListeningForDestroy(body => {
+		getBodyMeshEventManager().startListeningForDestroy(body => {
 			const mesh = architectureModelFactory.deleteMesh(body);
 			if (mesh) {
 				scene.remove(mesh);

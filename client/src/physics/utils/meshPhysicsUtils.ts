@@ -1,10 +1,11 @@
 import { Body, FixtureDef, PolygonShape, Vec2 } from "box2d";
-import { BufferAttribute, Mesh } from "three";
+import { BufferAttribute } from "three";
 import { architectureModelFactory } from "~/factories/ArchitectureModelFactory";
+import { GLTF_MESH_SCALE } from "~/settings/constants";
 
+import { findCollider } from "./meshColliderUtils";
 import { makeBitMask, PBits } from "./physicsUtils";
 
-const __scale = 0.5;
 export async function getArchitectMeshAndFixtures(
 	body: Body,
 	meshName: string,
@@ -12,32 +13,15 @@ export async function getArchitectMeshAndFixtures(
 	categoryArray?: PBits[],
 	maskArray?: PBits[]
 ) {
-	const obj = await architectureModelFactory.requestMesh({
+	const mesh = await architectureModelFactory.requestMesh({
 		body,
 		meshName,
+		colliderName,
 		addPivot: true,
 		categoryArray,
 		maskArray
 	});
-	let mesh: Mesh | undefined;
-	obj.traverse(child => {
-		if (child instanceof Mesh && child.visible) {
-			mesh = child;
-		}
-	});
-	if (!mesh) {
-		throw new Error("no mesh found");
-	}
-	let collider: Mesh | undefined;
-	obj.traverse(child => {
-		if (child instanceof Mesh && child.name.includes(colliderName)) {
-			collider = child;
-		}
-	});
-	if (!collider) {
-		throw new Error("no collider found");
-	}
-
+	const collider = findCollider(mesh, colliderName);
 	const vertsAttribute = collider.geometry.attributes.position;
 	const indicesAttribute = collider.geometry.getIndex();
 	const fixtureDef = new FixtureDef();
@@ -52,16 +36,58 @@ export async function getArchitectMeshAndFixtures(
 		const verts = vertsAttribute.array;
 		const indices = indicesAttribute.array;
 		const shape = new PolygonShape();
+		const edges = new Set<string>();
 		fixtureDef.shape = shape;
 		for (let i3 = 0; i3 < indices.length; i3 += 3) {
-			const a = indices[i3] * 3;
-			const b = indices[i3 + 1] * 3;
-			const c = indices[i3 + 2] * 3;
-			const positions = [
-				new Vec2(verts[b] * __scale, verts[b + 2] * -__scale),
-				new Vec2(verts[a] * __scale, verts[a + 2] * -__scale),
-				new Vec2(verts[c] * __scale, verts[c + 2] * -__scale)
-			];
+			const a = indices[i3];
+			const b = indices[i3 + 1];
+			const c = indices[i3 + 2];
+			const ab = a + ":" + b;
+			const bc = b + ":" + c;
+			const ca = c + ":" + a;
+			const ac = a + ":" + c;
+			const ba = b + ":" + a;
+			const cb = c + ":" + b;
+			if (edges.has(ba)) {
+				edges.delete(ba);
+			} else {
+				edges.add(ab);
+			}
+			if (edges.has(cb)) {
+				edges.delete(cb);
+			} else {
+				edges.add(bc);
+			}
+			if (edges.has(ac)) {
+				edges.delete(ac);
+			} else {
+				edges.add(ca);
+			}
+		}
+		const edgeMap = new Map<number, number>();
+		for (const edge of edges) {
+			const edgeData = edge.split(":").map(v => parseInt(v, 10));
+			edgeMap.set(edgeData[0], edgeData[1]);
+		}
+		const loops: number[][] = [];
+		while (edgeMap.size > 0) {
+			const start = edgeMap.keys().next().value;
+			let cursor = edgeMap.get(start)!;
+			const loop: number[] = [cursor];
+			edgeMap.delete(start);
+			do {
+				const val = edgeMap.get(cursor)!;
+				edgeMap.delete(cursor);
+				loop.push(val);
+				cursor = val;
+			} while (cursor !== start);
+			loops.push(loop);
+		}
+		for (const loop of loops) {
+			const positions = loop.map(i => {
+				const i3 = i * 3;
+				return new Vec2(verts[i3] * GLTF_MESH_SCALE, verts[i3 + 2] * -GLTF_MESH_SCALE);
+			});
 			shape.Set(positions);
 			body.CreateFixture(fixtureDef);
 		}

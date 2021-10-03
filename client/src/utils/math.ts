@@ -183,6 +183,10 @@ export function rand(min: number = 0, max: number = 1) {
 	return Math.random() * (max - min) + min;
 }
 
+export function randInt(max: number = 1, offset = 0) {
+	return ~~(Math.random() * max) + offset;
+}
+
 export function rand2(scale: number = 1, offset: number = 0) {
 	return (Math.random() * 2 - 1) * scale + offset;
 }

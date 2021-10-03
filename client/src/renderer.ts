@@ -27,7 +27,7 @@ const attributeValues: string[] = ["-moz-crisp-edges", "-webkit-crisp-edges", "p
 
 attributeValues.forEach(v => {
 	//@ts-ignore
-	renderer.context.canvas.style.setProperty("image-rendering", v);
+	renderer.getContext().canvas.style.setProperty("image-rendering", v);
 });
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = PCFShadowMap;
