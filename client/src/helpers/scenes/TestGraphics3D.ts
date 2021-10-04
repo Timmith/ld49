@@ -1,5 +1,5 @@
 import { Vec2 } from "box2d";
-import { DoubleSide, Mesh, MeshBasicMaterial, MeshStandardMaterial, Plane, Vector3, WebGLRenderer } from "three";
+import { Mesh, MeshBasicMaterial, MeshStandardMaterial, Plane, Vector3, WebGLRenderer } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import device from "~/device";
 import TestGraphicsPack from "~/helpers/scenes/TestGraphicsPack";
