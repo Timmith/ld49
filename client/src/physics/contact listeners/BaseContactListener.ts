@@ -5,10 +5,8 @@ import { queueDestruction } from "../managers/destructionManager";
 
 export default class BaseContactListener extends ContactListener {
 	static readonly k_maxContactPoints: number = 2048;
-	private _healthChangeCallbacks: Array<(healthDelta: number) => void> = [];
-	private _bodiesThatHit: Body[] = [];
-
-	listenForHealthChanges(healthChangeCallback: (healthDelta: number) => void) {
+	private _healthChangeCallbacks: Array<(healthDelta: number, body: Body) => void> = [];
+	listenForHealthChanges(healthChangeCallback: (healthDelta: number, body: Body) => void) {
 		this._healthChangeCallbacks.push(healthChangeCallback);
 	}
 
@@ -48,16 +46,10 @@ export default class BaseContactListener extends ContactListener {
 	}
 
 	private _architectureHitsPenalty(architectureFixt: Fixture, penaltyFixt: Fixture) {
-		const body = architectureFixt.GetBody();
-
-		if (!this._bodiesThatHit.includes(body)) {
-			for (const cb of this._healthChangeCallbacks) {
-				cb(-1);
-			}
-			queueDestruction(architectureFixt);
+		for (const cb of this._healthChangeCallbacks) {
+			cb(-1, architectureFixt.GetBody());
 		}
-
-		this._bodiesThatHit.push(body);
+		queueDestruction(architectureFixt);
 	}
 }
 

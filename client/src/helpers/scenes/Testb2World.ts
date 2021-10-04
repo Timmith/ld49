@@ -84,6 +84,7 @@ export default class Testb2World {
 	cursorPosition: Vec2;
 	selectedBody: Body | undefined;
 	selectedBodyOffset: Vec2;
+	thingsThatHurtMe: Body[] = [];
 
 	player = new Player();
 	activeArchitectureBodies: Body[] = [];
@@ -324,8 +325,11 @@ export default class Testb2World {
 		register any ContactListeners for separate contact cases */
 		const mcl = getMetaContactListener();
 		const bcl = new BaseContactListener();
-		bcl.listenForHealthChanges((healthDelta: number) => {
-			this.player.currentHealth = Math.max(0, this.player.currentHealth + healthDelta);
+		bcl.listenForHealthChanges((healthDelta: number, body: Body) => {
+			if (!this.thingsThatHurtMe.includes(body)) {
+				this.thingsThatHurtMe.push(body);
+				this.player.currentHealth = Math.max(0, this.player.currentHealth + healthDelta);
+			}
 		});
 		mcl.register(bcl);
 		this.b2World.SetContactListener(mcl);
@@ -561,6 +565,7 @@ export default class Testb2World {
 
 	private gameOver() {
 		console.log("Sorry, you lost!");
+		this.thingsThatHurtMe.length = 0;
 
 		this.isStarted = false;
 		this.player.currentLevel = 0;
