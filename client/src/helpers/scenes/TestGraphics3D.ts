@@ -4,7 +4,6 @@ import device from "~/device";
 import TestGraphicsPack from "~/helpers/scenes/TestGraphicsPack";
 import { Easing } from "~/misc/animation/Easing";
 import { simpleTweener } from "~/misc/animation/tweeners";
-import { getUrlFlag } from "~/utils/location";
 import { hitTestPlaneAtPixel } from "~/utils/math";
 
 import Testb2World from "./Testb2World";
