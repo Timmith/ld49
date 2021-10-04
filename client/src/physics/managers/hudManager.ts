@@ -27,10 +27,10 @@ export async function registerHUD(player: Player, passedGUI: SimpleGUIOverlay) {
 	timerText.opacity = 2;
 	TimerBarMesh.add(timerText);
 
-	// const levelText = new TextMesh(`${player.currentLevel + 1}`);
-	// levelText.scale.multiplyScalar(100);
-	// levelText.opacity = 2;
-	// TimerBarMesh.add(levelText);
+	const levelText = new TextMesh(`Level: ${player.currentLevel + 1}`);
+	levelText.scale.multiplyScalar(100);
+	levelText.opacity = 2;
+	TimerBarMesh.add(levelText);
 }
 
 // export function unregisterUserHUD(playerBody: Body) {
@@ -55,13 +55,20 @@ export function processHUD(dt: number, player: Player) {
 		(gui!._relativeHeightButtonSpacing * 2) / 4,
 		0
 	);
+
 	timerBarMesh.children[0].scale.x = 4000 / timerBarMesh.scale.x;
 	const timeTextOffset = 1;
 	timerBarMesh.children[0].position.set(-1 + (timerRatio - timeTextOffset) / timerRatio / 2, 0.05, 0);
+
 	const timerInt = timerBarMesh.children[1] as TextMesh;
 	timerInt.scale.x = 4000 / timerBarMesh.scale.x;
 	timerInt.position.set(-1 + (timerRatio + timeTextOffset * barLengthener) / timerRatio / 2, 0.05, 0);
 	timerInt.text = `${player.currentTimer.toFixed(2)}`;
+
+	const levelLabel = timerBarMesh.children[2] as TextMesh;
+	levelLabel.scale.x = 4000 / timerBarMesh.scale.x;
+	levelLabel.position.set(-1 + (timerRatio + timeTextOffset * barLengthener) / timerRatio / 2, 0.05 + 1, 0);
+	levelLabel.text = `Level: ${player.currentLevel + 1}`;
 
 	// const levelInt = timerBarMesh.children[1] as TextMesh;
 	// levelInt.scale.x = 4000 / timerBarMesh.scale.x;
