@@ -20,6 +20,7 @@ import {
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
 import { getUrlColor, getUrlFlag } from "~/utils/location";
+import { unlerpClamped, wrap } from "~/utils/math";
 import { RayCastConverter } from "~/utils/RayCastConverter";
 import { taskTimer } from "~/utils/taskTimer";
 
@@ -120,7 +121,14 @@ export default class Testb2World {
 
 				const currentHandleAngle = Math.atan2(currentHandleDelta.y, currentHandleDelta.x);
 
-				const angleDelta = currentHandleAngle - initialHandleAngle;
+				let angleDelta = wrap(currentHandleAngle - initialHandleAngle, -Math.PI, Math.PI);
+
+				const dist = currentHandleDelta.Length();
+				const strengthRadius = 0.5;
+
+				if (dist < strengthRadius) {
+					angleDelta *= unlerpClamped(0.05, strengthRadius, dist);
+				}
 
 				// const delta = this.initialRotationHandlePosition.Clone().SelfSub(this.cursorPosition).Normalize() * 10;
 				// let coefficient: number = 1;
@@ -130,7 +138,11 @@ export default class Testb2World {
 
 				this.lastSelectedBody.SetAngularVelocity(0.001);
 
-				this.lastSelectedBody.SetAngle(angleDelta + this.lastSelectedBodyAngle);
+				const currentLastSelectedBodyAngle = this.lastSelectedBody.GetAngle();
+
+				this.lastSelectedBody.SetAngle(angleDelta + currentLastSelectedBodyAngle);
+
+				this.initialRotationHandlePosition.Copy(this.cursorPosition);
 			}
 			// Responsible for level end & checking, settling, gameOver
 			if (this.player.currentTimer < 0) {
