@@ -47,8 +47,6 @@ type GameState =
 	| "gameOver";
 
 export default class Testb2World {
-	lastSelectedBodyAngle: number;
-	debugMode: boolean = getUrlFlag("debugMode");
 	get state(): GameState {
 		return this._state;
 	}
@@ -59,12 +57,22 @@ export default class Testb2World {
 			this.stateUpdate = this.stateUpdates[value];
 		}
 	}
+	get lastSelectedBody(): Body | undefined {
+		return this._lastSelectedBody;
+	}
+	set lastSelectedBody(value: Body | undefined) {
+		this._lastSelectedBody = value;
+		if (this.pieceSelectedCallback) {
+			this.pieceSelectedCallback(value);
+		}
+	}
+	lastSelectedBodyAngle: number;
+	debugMode: boolean = getUrlFlag("debugMode");
 	autoClear = true;
 	gui = new SimpleGUIOverlay();
 	cursorPosition: Vec2;
 	selectedBody: Body | undefined;
 	selectedBodyOffset: Vec2;
-	lastSelectedBody: Body | undefined;
 
 	player = new Player();
 	activeArchitectureBodies: Body[] = [];
@@ -264,6 +272,7 @@ export default class Testb2World {
 	protected camera: Camera;
 	protected bgColor: Color;
 	protected b2Preview: Box2DPreviewMesh;
+	private _lastSelectedBody: Body | undefined;
 
 	private _state: GameState = "uninitialized";
 
@@ -274,7 +283,8 @@ export default class Testb2World {
 	constructor(
 		private rayCastConverter?: RayCastConverter,
 		private nextLevelCallback?: () => void,
-		private gameResetCallback?: () => void
+		private gameResetCallback?: () => void,
+		private pieceSelectedCallback?: (body?: Body) => void
 	) {
 		this.initiateScene();
 

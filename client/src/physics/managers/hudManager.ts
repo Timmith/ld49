@@ -8,6 +8,9 @@ import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 let gui: SimpleGUIOverlay | undefined;
 const playerHeartsMap = new Map<Player, Mesh[]>();
 const playerTimerBarMap = new Map<Player, Mesh>();
+
+const playerButtonMap = new Map<Player, Mesh>();
+
 const __heartSpacing: number = 40;
 
 // fullScreenButton
@@ -17,20 +20,9 @@ export async function registerHUD(player: Player, passedGUI: SimpleGUIOverlay) {
 	// HUDBodies.push(playerBody);
 
 	await initializeHealthHUD(player);
-	await initializeFullscreenButton();
+	initializeLevelTimer(player);
 
-	const TimerBarMesh = gui.makeTimerBar(0, 0);
-	playerTimerBarMap.set(player, TimerBarMesh);
-
-	const timerText = new TextMesh(`${player.currentTimer}`);
-	timerText.scale.multiplyScalar(100);
-	timerText.opacity = 2;
-	TimerBarMesh.add(timerText);
-
-	const levelText = new TextMesh(`Level: ${player.currentLevel + 1}`);
-	levelText.scale.multiplyScalar(100);
-	levelText.opacity = 2;
-	TimerBarMesh.add(levelText);
+	await initializeFullscreenButton(player);
 }
 
 // export function unregisterUserHUD(playerBody: Body) {
@@ -41,8 +33,9 @@ export function processHUD(dt: number, player: Player) {
 	// for (const player of HUDBodies) {
 
 	healthHUDupdate(player);
-	const offsetFromLeft = window.innerWidth / 3;
+	fullscreenButtonUpdate(player);
 
+	const offsetFromLeft = window.innerWidth / 3;
 	const timerBarMesh = playerTimerBarMap.get(player);
 	if (!timerBarMesh) {
 		return;
@@ -69,13 +62,21 @@ export function processHUD(dt: number, player: Player) {
 	levelLabel.scale.x = 4000 / timerBarMesh.scale.x;
 	levelLabel.position.set(-1 + (timerRatio + timeTextOffset * barLengthener) / timerRatio / 2, 0.05 + 1, 0);
 	levelLabel.text = `Level: ${player.currentLevel + 1}`;
+}
 
-	// const levelInt = timerBarMesh.children[1] as TextMesh;
-	// levelInt.scale.x = 4000 / timerBarMesh.scale.x;
-	// levelInt.position.set(-1 + (timerRatio + timeTextOffset * barLengthener) / timerRatio / 2, 0.05, 0);
-	// levelInt.text = `${player.currentLevel +1}`;
+function initializeLevelTimer(player: Player) {
+	const TimerBarMesh = gui!.makeTimerBar(0, 0);
+	playerTimerBarMap.set(player, TimerBarMesh);
 
-	// }
+	const timerText = new TextMesh(`${player.currentTimer}`);
+	timerText.scale.multiplyScalar(100);
+	timerText.opacity = 2;
+	TimerBarMesh.add(timerText);
+
+	const levelText = new TextMesh(`Level: ${player.currentLevel + 1}`);
+	levelText.scale.multiplyScalar(100);
+	levelText.opacity = 2;
+	TimerBarMesh.add(levelText);
 }
 
 async function initializeHealthHUD(player: Player) {
@@ -114,9 +115,25 @@ function healthHUDupdate(player: Player) {
 	}
 }
 
-async function initializeFullscreenButton() {
-	return gui!.makeFullscreenIcon(
+async function initializeFullscreenButton(player: Player) {
+	const fullscreenButton: Mesh = await gui!.makeFullscreenIcon(
 		gui!._relativeWidthButtonSpacing,
 		window.innerHeight - gui!._relativeHeightButtonSpacing / 2
+	);
+
+	playerButtonMap.set(player, fullscreenButton);
+
+	return;
+}
+
+function fullscreenButtonUpdate(player: Player) {
+	const fullscreenButton = playerButtonMap.get(player);
+	if (!fullscreenButton) {
+		return;
+	}
+	fullscreenButton.position.set(
+		gui!._relativeWidthButtonSpacing,
+		window.innerHeight - gui!._relativeHeightButtonSpacing / 2,
+		0
 	);
 }

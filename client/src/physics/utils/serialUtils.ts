@@ -1,4 +1,5 @@
 import { World } from "box2d";
+// import { Player } from "~/helpers/scenes/Testb2World";
 
 import { ArchitectParams, createArchitectMeshAndFixtures, isArchitectParams } from "./physicsUtils";
 
@@ -18,6 +19,9 @@ export async function loadLevelData(b2World: World, data: WorldData): Promise<vo
 
 export function serializeWorld(b2World: World): WorldData {
 	const data: WorldData = [];
+
+	// const playerHealth: Player = new Player()
+
 	for (let body = b2World.GetBodyList(); body; body = body.m_next) {
 		if (isArchitectParams(body.m_userData)) {
 			const { x, y } = body.GetPosition();
@@ -31,4 +35,8 @@ export function saveLevelBeforeUnload(b2World: World) {
 	window.onbeforeunload = () => {
 		localStorage.setItem("level", JSON.stringify(serializeWorld(b2World)));
 	};
+}
+
+export function saveLevelData(b2World: World) {
+	localStorage.setItem("level", JSON.stringify(serializeWorld(b2World)));
 }

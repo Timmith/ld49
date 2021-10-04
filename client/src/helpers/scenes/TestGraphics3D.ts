@@ -5,6 +5,7 @@ import device from "~/device";
 import TestGraphicsPack from "~/helpers/scenes/TestGraphicsPack";
 import { Easing } from "~/misc/animation/Easing";
 import { simpleTweener } from "~/misc/animation/tweeners";
+import { isArchitectParams } from "~/physics/utils/physicsUtils";
 import { getUrlFlag } from "~/utils/location";
 import { hitTestPlaneAtPixel } from "~/utils/math";
 
@@ -17,6 +18,8 @@ export default class TestGraphics3D extends TestLightingScene {
 	useB2Preview = getUrlFlag("debugPhysics");
 	heightGoal: Object3D | undefined;
 	dangerZone: Object3D | undefined;
+	currentSelectedPiece: Mesh<any, any> | undefined;
+	currentSelectedPieceOriginalMaterial: MeshStandardMaterial;
 
 	constructor() {
 		super(false, false);
@@ -88,6 +91,33 @@ export default class TestGraphics3D extends TestLightingScene {
 						duration: 2000
 					});
 				}
+			},
+
+			body => {
+				if (this.currentSelectedPiece) {
+					this.currentSelectedPiece.material = this.currentSelectedPieceOriginalMaterial;
+					this.currentSelectedPiece = undefined;
+				}
+
+				if (body) {
+					const piece = this.graphicsPack.bodyMeshMap.get(body);
+					const pieceUserData = body.GetUserData();
+
+					if (piece && isArchitectParams(pieceUserData)) {
+						const mesh = piece.getObjectByName(pieceUserData.meshName);
+
+						if (mesh instanceof Mesh && mesh.material instanceof MeshStandardMaterial) {
+							this.currentSelectedPieceOriginalMaterial = mesh.material;
+							const material = mesh.material.clone() as MeshStandardMaterial;
+							mesh.material = material;
+
+							material.emissive.setRGB(0.2, 0.15, 0);
+							material.color.setRGB(1, 1, 0.8);
+
+							this.currentSelectedPiece = mesh;
+						}
+					}
+				}
 			}
 		);
 		this.b2World.autoClear = false;
@@ -130,7 +160,6 @@ export default class TestGraphics3D extends TestLightingScene {
 					const map = dangerZone.material.map;
 					dangerZone.material = new MeshBasicMaterial({ map, transparent: true, opacity: 0.5 });
 				}
-				// dangerZone.position.y += 1
 			}
 			if (sky) {
 				if (sky instanceof Mesh && sky.material instanceof MeshStandardMaterial) {
@@ -140,7 +169,6 @@ export default class TestGraphics3D extends TestLightingScene {
 					const color = new Color(2, 2, 2);
 					sky.material = new MeshBasicMaterial({ map, fog: true, color });
 				}
-				// dangerZone.position.y += 1
 			}
 			this.heightGoal = heightGoal;
 			this.dangerZone = dangerZone;
