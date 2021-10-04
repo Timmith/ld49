@@ -20,7 +20,8 @@ export function serializeWorld(b2World: World): WorldData {
 	const data: WorldData = [];
 	for (let body = b2World.GetBodyList(); body; body = body.m_next) {
 		if (isArchitectParams(body.m_userData)) {
-			data.push(body.m_userData);
+			const { x, y } = body.GetPosition();
+			data.push({ ...body.m_userData, x, y, angle: body.GetAngle() });
 		}
 	}
 	return data;
