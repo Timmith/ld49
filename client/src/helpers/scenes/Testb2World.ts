@@ -1,5 +1,15 @@
 import { Body, Vec2, World } from "box2d";
-import { Camera, Color, Fog, PerspectiveCamera, Scene, WebGLRenderer } from "three";
+import {
+	BufferGeometry,
+	Camera,
+	Color,
+	Fog,
+	Mesh,
+	MeshBasicMaterial,
+	PerspectiveCamera,
+	Scene,
+	WebGLRenderer
+} from "three";
 import device from "~/device";
 import getKeyboardInput from "~/input/getKeyboardInput";
 import { Box2DPreviewMesh, debugPolygonPhysics } from "~/meshes/Box2DPreviewMesh";
@@ -17,7 +27,8 @@ import {
 	makeBitMask,
 	queryForSingleArchitectureBody
 } from "~/physics/utils/physicsUtils";
-import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
+import SimpleGUIOverlay, { ButtonUserData } from "~/ui/SimpleGUIOverlay";
+import { COLOR_HOURGLASS_AVAILABLE, COLOR_HOURGLASS_UNAVAILABLE } from "~/utils/colorLibrary";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
 import { getUrlColor, getUrlFlag } from "~/utils/location";
 import { unlerpClamped, wrap } from "~/utils/math";
@@ -37,7 +48,7 @@ let isKeyXDown: boolean = false;
 let isKeyCDown: boolean = false;
 let isKeyVDown: boolean = false;
 
-type GameState =
+export type GameState =
 	| "uninitialized"
 	| "waitingForInput"
 	| "playing"
@@ -88,6 +99,8 @@ export default class Testb2World {
 
 	penaltyLine: Body;
 	goalLine: Body;
+
+	hourglassButton: Mesh<BufferGeometry, MeshBasicMaterial> | undefined;
 
 	stateUpdate: (dt: number) => void;
 
@@ -166,9 +179,12 @@ export default class Testb2World {
 				}, 5);
 
 				this.state = "settling";
+
+				this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
 			} else if (this.player.currentHealth === 0) {
 				this.gameOver();
 				this.state = "gameOver";
+				this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
 			}
 		},
 
@@ -237,6 +253,7 @@ export default class Testb2World {
 			} else {
 				this.gameOver();
 				this.state = "gameOver";
+				this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
 			}
 		},
 
@@ -317,7 +334,29 @@ export default class Testb2World {
 		getKeyboardInput().addListener(this.HandleKey);
 
 		/* Character Spawn/Control */
-		this._postUpdates.push(startControls(this.b2World, rayCastConverter!, this.gui, this.b2Preview, this.player));
+
+		const initControls = async () => {
+			const controls = await startControls(
+				this.b2World,
+				rayCastConverter!,
+				this.gui,
+				this.b2Preview,
+				this.player
+			);
+			this._postUpdates.push(controls.postUpdate);
+
+			this.hourglassButton = controls.ui.hourglassButton;
+
+			const buttonUserData = controls.ui.hourglassButton.userData;
+			if (buttonUserData instanceof ButtonUserData) {
+				buttonUserData.registerHitCallback(() => {
+					if (this.state === "playing") {
+						this.player.currentTimer = 0;
+					}
+				});
+			}
+		};
+		initControls();
 
 		/* Test Environment */
 
@@ -371,6 +410,8 @@ export default class Testb2World {
 
 				if (this.state === "waitingForInput") {
 					this.state = "playing";
+
+					this.colorizeHourglassButton(COLOR_HOURGLASS_AVAILABLE);
 				}
 				this.cursorPosition = this.rayCastConverter!(mouseClick.clientX, mouseClick.clientY);
 				const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
@@ -510,6 +551,12 @@ export default class Testb2World {
 		}
 		renderer.render(this.scene, this.camera);
 		this.gui.render(renderer);
+	}
+
+	private colorizeHourglassButton(color: Color) {
+		if (this.hourglassButton) {
+			this.hourglassButton.material.color.copy(color);
+		}
 	}
 
 	private gameOver() {

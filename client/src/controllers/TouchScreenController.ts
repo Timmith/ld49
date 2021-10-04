@@ -1,5 +1,5 @@
 import { Vec2 } from "box2d";
-import { BoxGeometry, CircleGeometry, Mesh, MeshBasicMaterial } from "three";
+import { CircleGeometry, Mesh, MeshBasicMaterial, PlaneBufferGeometry } from "three";
 import { canvas } from "~/renderer";
 import SimpleGUIOverlay, { ToggleButtonUserData } from "~/ui/SimpleGUIOverlay";
 
@@ -9,24 +9,24 @@ export default class TouchScreenController extends Controller {
 	desiredMovementVector = new Vec2();
 	aim = new Vec2();
 
-	debugMovementBasestCursor: Mesh<BoxGeometry | CircleGeometry, MeshBasicMaterial> | undefined;
-	debugMovementBaseCursor: Mesh<BoxGeometry | CircleGeometry, MeshBasicMaterial> | undefined;
-	debugMovementTracerCursor: Mesh<BoxGeometry | CircleGeometry, MeshBasicMaterial> | undefined;
+	debugMovementBasestCursor: Mesh<PlaneBufferGeometry | CircleGeometry, MeshBasicMaterial> | undefined;
+	debugMovementBaseCursor: Mesh<PlaneBufferGeometry | CircleGeometry, MeshBasicMaterial> | undefined;
+	debugMovementTracerCursor: Mesh<PlaneBufferGeometry | CircleGeometry, MeshBasicMaterial> | undefined;
 	debugMovementBasePosition: Vec2 | undefined;
 	debugMovementTracerPosition: Vec2 | undefined;
 	debugMovementIdentifier: number | undefined;
 	leftSideSecondSuccessiveTap: boolean = false;
 
-	debugAimBasestCursor: Mesh<BoxGeometry | CircleGeometry, MeshBasicMaterial> | undefined;
-	debugAimBaseCursor: Mesh<BoxGeometry | CircleGeometry, MeshBasicMaterial> | undefined;
-	debugAimTracerCursor: Mesh<BoxGeometry | CircleGeometry, MeshBasicMaterial> | undefined;
+	debugAimBasestCursor: Mesh<PlaneBufferGeometry | CircleGeometry, MeshBasicMaterial> | undefined;
+	debugAimBaseCursor: Mesh<PlaneBufferGeometry | CircleGeometry, MeshBasicMaterial> | undefined;
+	debugAimTracerCursor: Mesh<PlaneBufferGeometry | CircleGeometry, MeshBasicMaterial> | undefined;
 	debugAimBasePosition: Vec2 | undefined;
 	debugAimTracerPosition: Vec2 | undefined;
 	debugAimIdentifier: number | undefined;
 	rightSideSecondSuccessiveTap: boolean = false;
 
-	buildModeButton: Mesh<CircleGeometry | BoxGeometry, MeshBasicMaterial>;
-	secondtestButton: Mesh<BoxGeometry | CircleGeometry, MeshBasicMaterial>;
+	buildModeButton: Mesh<CircleGeometry | PlaneBufferGeometry, MeshBasicMaterial>;
+	secondtestButton: Mesh<PlaneBufferGeometry | CircleGeometry, MeshBasicMaterial>;
 
 	buttonScaling: number;
 

@@ -5,6 +5,7 @@ import {
 	MeshBasicMaterial,
 	NearestFilter,
 	OrthographicCamera,
+	PlaneBufferGeometry,
 	Raycaster,
 	Scene,
 	Texture,
@@ -13,6 +14,7 @@ import {
 	WebGLRenderer
 } from "three";
 import device from "~/device";
+import { Player } from "~/helpers/scenes/Testb2World";
 import { canvas } from "~/renderer";
 import TextMesh from "~/text/TextMesh";
 import { removeFromArray } from "~/utils/arrayUtils";
@@ -25,24 +27,25 @@ export default class SimpleGUIOverlay {
 
 	private _scene = new Scene();
 	private _camera = new OrthographicCamera(0, window.innerWidth, 0, window.innerHeight, -100, 100);
-
 	private _fixedRadius: number = 33.3; // <-- good sizing for thumbs (the analogs) on the screen
 	private _uiMeshes: Mesh[] = [];
 	private _uiButtonMeshes: Mesh[] = [];
+
+	/* Materials */
 	private _material: MeshBasicMaterial;
 	private _geometryBigger: CircleBufferGeometry;
 	private _geometryBig: CircleBufferGeometry;
 	private _geometryMedium: CircleBufferGeometry;
 	private _geometrySmall: CircleBufferGeometry;
 	private _geometrySqaureSmall: BoxBufferGeometry;
+	private _geometryTimerBar: BoxBufferGeometry;
 
 	private _imageLoader: TextureLoader = new TextureLoader();
-
 	/* Texture Promises */
 	private _fullscreenEnterTextureLoading: Promise<Texture> | undefined;
 	private _fullscreenExitTextureLoading: Promise<Texture> | undefined;
 	private _whiteHeartTextureLoading: Promise<Texture> | undefined;
-	private _geometryTimerBar: any;
+	private _hourglassTextureLoading: Promise<Texture> | undefined;
 
 	constructor() {
 		this._scene.add(this._camera);
@@ -83,7 +86,7 @@ export default class SimpleGUIOverlay {
 		const rayCast = new Raycaster(new Vector3(clientX, clientY, -100), new Vector3(0, 0, 1), 0, 200);
 		const hitIntersection = rayCast.intersectObjects(this._uiButtonMeshes);
 		for (const hit of hitIntersection) {
-			if (hit.object.userData instanceof ToggleButtonUserData) {
+			if (hit.object.userData instanceof ToggleButtonUserData || hit.object.userData instanceof ButtonUserData) {
 				hit.object.userData.hit();
 				return true;
 			}
@@ -117,6 +120,22 @@ export default class SimpleGUIOverlay {
 		// console.log(`window.innerWidth: ${window.innerWidth}, innerHeight ${window.innerHeight}`);
 
 		renderer.render(this._scene, this._camera);
+	}
+
+	async makeHourglassIcon(x: number, y: number, player: Player) {
+		const hourglassTexture = await this.getHourglassTexture();
+
+		const imageAspectRatio = hourglassTexture.image.width / hourglassTexture.image.height;
+		const geo = new PlaneBufferGeometry(
+			this._squareButtonDimensions * imageAspectRatio,
+			this._squareButtonDimensions
+		);
+		const mesh = this._makeUI(geo, x, y, true, undefined);
+		mesh.material = new MeshBasicMaterial({ map: hourglassTexture, transparent: true });
+
+		mesh.userData = new ButtonUserData();
+
+		return mesh;
 	}
 
 	async makeFullscreenIcon(x: number, y: number) {
@@ -188,7 +207,7 @@ export default class SimpleGUIOverlay {
 	}
 
 	private _makeUI(
-		geo: BoxBufferGeometry | CircleBufferGeometry,
+		geo: BoxBufferGeometry | CircleBufferGeometry | PlaneBufferGeometry,
 		x: number,
 		y: number,
 		isButton?: boolean,
@@ -218,6 +237,17 @@ export default class SimpleGUIOverlay {
 			return this._material.clone() as MeshBasicMaterial;
 		}
 		return this._material;
+	}
+
+	private getHourglassTexture() {
+		if (!this._hourglassTextureLoading) {
+			this._hourglassTextureLoading = this._imageLoader.loadAsync("game/icons/hourglass-button.png");
+			this._hourglassTextureLoading.then(tex => {
+				tex.minFilter = NearestFilter;
+				tex.magFilter = NearestFilter;
+			});
+		}
+		return this._hourglassTextureLoading;
 	}
 
 	private getFullscreenEnterTexture() {
@@ -303,6 +333,30 @@ export class ToggleButtonUserData {
 	hit() {
 		this.enabled = !this.enabled;
 		this.callback(this.enabled);
+	}
+}
+
+export class ButtonUserData {
+	private callbacks: Array<() => void> = [];
+
+	constructor() {}
+
+	hit() {
+		for (const cb of this.callbacks) {
+			cb();
+		}
+	}
+
+	registerHitCallback(callback: () => void) {
+		this.callbacks.push(callback);
+	}
+}
+
+export class PushButtonUserData {
+	constructor(private callback: () => void) {}
+
+	hit() {
+		this.callback();
 	}
 }
 

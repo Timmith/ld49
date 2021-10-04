@@ -5,7 +5,7 @@ import { registerHUD } from "~/physics/managers/hudManager";
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 import { RayCastConverter } from "~/utils/RayCastConverter";
 
-export function startControls(
+export async function startControls(
 	b2World: World,
 	rayCastConverter: RayCastConverter,
 	gui: SimpleGUIOverlay,
@@ -20,7 +20,7 @@ export function startControls(
 	// b2World.SetContactListener(mcl);
 
 	// const initiateControls = (controller: Controller) => {
-	registerHUD(player, gui);
+	const ui = await registerHUD(player, gui);
 	// };
 
 	// rigToGamePad(gamePadAPI => initiateControls(new GamePadControls(gamePadAPI)));
@@ -46,5 +46,5 @@ export function startControls(
 			pu(dt);
 		}
 	};
-	return postUpdate;
+	return { postUpdate, ui };
 }

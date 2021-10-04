@@ -1,5 +1,5 @@
 // import { Body } from "box2d";
-import { Color, Mesh } from "three";
+import { BufferGeometry, Color, Mesh, MeshBasicMaterial } from "three";
 import { Player } from "~/helpers/scenes/Testb2World";
 import TextMesh from "~/text/TextMesh";
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
@@ -10,6 +10,7 @@ const playerHeartsMap = new Map<Player, Mesh[]>();
 const playerTimerBarMap = new Map<Player, Mesh>();
 
 const playerButtonMap = new Map<Player, Mesh>();
+const playerHourglassMap = new Map<Player, Mesh>();
 
 const __heartSpacing: number = 40;
 
@@ -23,6 +24,16 @@ export async function registerHUD(player: Player, passedGUI: SimpleGUIOverlay) {
 	initializeLevelTimer(player);
 
 	await initializeFullscreenButton(player);
+
+	const hourglassButton: Mesh<BufferGeometry, MeshBasicMaterial> = await gui!.makeHourglassIcon(
+		window.innerWidth - gui!._relativeWidthButtonSpacing,
+		window.innerHeight - gui!._relativeHeightButtonSpacing / 2,
+		player
+	);
+
+	playerHourglassMap.set(player, hourglassButton);
+
+	return { hourglassButton };
 }
 
 // export function unregisterUserHUD(playerBody: Body) {
@@ -62,6 +73,16 @@ export function processHUD(dt: number, player: Player) {
 	levelLabel.scale.x = 4000 / timerBarMesh.scale.x;
 	levelLabel.position.set(-1 + (timerRatio + timeTextOffset * barLengthener) / timerRatio / 2, 0.05 + 1, 0);
 	levelLabel.text = `Level: ${player.currentLevel + 1}`;
+
+	const hourglassButton = playerHourglassMap.get(player);
+	if (!hourglassButton) {
+		return;
+	}
+	hourglassButton.position.set(
+		window.innerWidth - gui!._relativeWidthButtonSpacing,
+		window.innerHeight - gui!._relativeHeightButtonSpacing / 2,
+		0
+	);
 }
 
 function initializeLevelTimer(player: Player) {
