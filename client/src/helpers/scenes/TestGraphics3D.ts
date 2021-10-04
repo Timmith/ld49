@@ -1,5 +1,5 @@
 import { Vec2 } from "box2d";
-import { Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, Plane, Vector3, WebGLRenderer } from "three";
+import { Color, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, Plane, Vector3, WebGLRenderer } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import device from "~/device";
 import TestGraphicsPack from "~/helpers/scenes/TestGraphicsPack";
@@ -106,31 +106,44 @@ export default class TestGraphics3D extends TestLightingScene {
 				});
 			}
 			const stage = gltf.scene;
-			this.heightGoal = stage.getObjectByName("heightGoal");
-			this.dangerZone = stage.getObjectByName("dangerZone");
+			const heightGoal = stage.getObjectByName("heightGoal");
+			const dangerZone = stage.getObjectByName("dangerZone");
+			const sky = stage.getObjectByName("sky");
 			stage.scale.multiplyScalar(0.1);
 			stage.rotation.y += Math.PI;
 			stage.position.y -= 1.5;
 			this.scene.add(stage);
-			if (this.heightGoal) {
-				this.heightGoal.scale.multiplyScalar(2);
-				this.scene.attach(this.heightGoal);
-				this.heightGoal.castShadow = false;
-				this.heightGoal.receiveShadow = false;
-				this.heightGoal.position.y = -0.25;
+			if (heightGoal) {
+				heightGoal.scale.multiplyScalar(2);
+				this.scene.attach(heightGoal);
+				heightGoal.castShadow = false;
+				heightGoal.receiveShadow = false;
+				heightGoal.position.y = -0.25;
 			}
-			if (this.dangerZone) {
-				this.dangerZone.scale.multiplyScalar(2);
-				this.scene.attach(this.dangerZone);
-				this.dangerZone.position.y = -1.55;
-				if (this.dangerZone instanceof Mesh && this.dangerZone.material instanceof MeshStandardMaterial) {
-					this.dangerZone.castShadow = false;
-					this.dangerZone.receiveShadow = false;
-					const map = this.dangerZone.material.map;
-					this.dangerZone.material = new MeshBasicMaterial({ map, transparent: true, opacity: 0.5 });
+			if (dangerZone) {
+				dangerZone.scale.multiplyScalar(2);
+				this.scene.attach(dangerZone);
+				dangerZone.position.y = -1.55;
+				if (dangerZone instanceof Mesh && dangerZone.material instanceof MeshStandardMaterial) {
+					dangerZone.castShadow = false;
+					dangerZone.receiveShadow = false;
+					const map = dangerZone.material.map;
+					dangerZone.material = new MeshBasicMaterial({ map, transparent: true, opacity: 0.5 });
 				}
 				// dangerZone.position.y += 1
 			}
+			if (sky) {
+				if (sky instanceof Mesh && sky.material instanceof MeshStandardMaterial) {
+					sky.castShadow = false;
+					sky.receiveShadow = false;
+					const map = sky.material.map;
+					const color = new Color(2, 2, 2);
+					sky.material = new MeshBasicMaterial({ map, fog: true, color });
+				}
+				// dangerZone.position.y += 1
+			}
+			this.heightGoal = heightGoal;
+			this.dangerZone = dangerZone;
 		};
 		initArt();
 	}
