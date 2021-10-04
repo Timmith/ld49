@@ -26,6 +26,11 @@ export async function registerHUD(player: Player, passedGUI: SimpleGUIOverlay) {
 	timerText.scale.multiplyScalar(100);
 	timerText.opacity = 2;
 	TimerBarMesh.add(timerText);
+
+	// const levelText = new TextMesh(`${player.currentLevel + 1}`);
+	// levelText.scale.multiplyScalar(100);
+	// levelText.opacity = 2;
+	// TimerBarMesh.add(levelText);
 }
 
 // export function unregisterUserHUD(playerBody: Body) {
@@ -57,6 +62,11 @@ export function processHUD(dt: number, player: Player) {
 	timerInt.scale.x = 4000 / timerBarMesh.scale.x;
 	timerInt.position.set(-1 + (timerRatio + timeTextOffset * barLengthener) / timerRatio / 2, 0.05, 0);
 	timerInt.text = `${player.currentTimer.toFixed(2)}`;
+
+	// const levelInt = timerBarMesh.children[1] as TextMesh;
+	// levelInt.scale.x = 4000 / timerBarMesh.scale.x;
+	// levelInt.position.set(-1 + (timerRatio + timeTextOffset * barLengthener) / timerRatio / 2, 0.05, 0);
+	// levelInt.text = `${player.currentLevel +1}`;
 
 	// }
 }
