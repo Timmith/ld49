@@ -46,6 +46,7 @@ type GameState =
 	| "gameOver";
 
 export default class Testb2World {
+	lastSelectedBodyAngle: number;
 	get state(): GameState {
 		return this._state;
 	}
@@ -60,13 +61,14 @@ export default class Testb2World {
 	gui = new SimpleGUIOverlay();
 	cursorPosition: Vec2;
 	selectedBody: Body | undefined;
+	selectedBodyOffset: Vec2;
 	lastSelectedBody: Body | undefined;
 
 	player = new Player();
 	activeArchitectureBodies: Body[] = [];
 	inactiveArchitectureBodies: Body[] = [];
 
-	pivotPoint: Vec2 | undefined;
+	initialRotationHandlePosition: Vec2 | undefined;
 	isTurningBody: boolean;
 	isStarted: boolean = false;
 	isTimerOver: boolean = false;
@@ -97,16 +99,37 @@ export default class Testb2World {
 
 			// Responsible for click and drag of architecture bodies
 			if (this.selectedBody) {
-				this.selectedBody.SetPosition(this.cursorPosition);
+				const temp = this.cursorPosition.Clone();
+				temp.SelfSub(this.selectedBodyOffset);
+				this.selectedBody.SetPosition(temp);
 			}
 			// Responsible for rotation of architecture bodies
-			if (!this.selectedBody && this.lastSelectedBody && this.isTurningBody && this.pivotPoint) {
-				const delta = this.pivotPoint.Clone().SelfSub(this.cursorPosition).Normalize() * 10;
-				let coefficient: number = 1;
-				if (this.pivotPoint.x < this.cursorPosition.x) {
-					coefficient = -1;
-				}
-				this.lastSelectedBody.SetAngularVelocity(coefficient * delta);
+			if (
+				!this.selectedBody &&
+				this.lastSelectedBody &&
+				this.isTurningBody &&
+				this.initialRotationHandlePosition
+			) {
+				const initialHandleDelta = this.lastSelectedBody.GetPosition().Clone();
+				initialHandleDelta.SelfSub(this.initialRotationHandlePosition);
+
+				const initialHandleAngle = Math.atan2(initialHandleDelta.y, initialHandleDelta.x);
+
+				const currentHandleDelta = this.lastSelectedBody.GetPosition().Clone();
+				currentHandleDelta.SelfSub(this.cursorPosition);
+
+				const currentHandleAngle = Math.atan2(currentHandleDelta.y, currentHandleDelta.x);
+
+				const angleDelta = currentHandleAngle - initialHandleAngle;
+
+				// const delta = this.initialRotationHandlePosition.Clone().SelfSub(this.cursorPosition).Normalize() * 10;
+				// let coefficient: number = 1;
+				// if (this.initialRotationHandlePosition.x < this.cursorPosition.x) {
+				// 	coefficient = -1;
+				// }
+				this.lastSelectedBody.SetAngularVelocity(0.001);
+
+				this.lastSelectedBody.SetAngle(angleDelta + this.lastSelectedBodyAngle);
 			}
 			// Responsible for level end & checking, settling, gameOver
 			if (this.player.currentTimer < 0) {
@@ -372,9 +395,15 @@ export default class Testb2World {
 					this.selectedBody = queryForSingleArchitectureBody(b2World, clickedb2Space);
 
 					if (this.selectedBody) {
+						const selectedDelta = clickedb2Space.Clone().SelfSub(this.selectedBody.GetPosition());
+						this.selectedBodyOffset = selectedDelta;
+					}
+
+					if (this.selectedBody) {
 						this.lastSelectedBody = this.selectedBody;
 					} else if (!this.selectedBody && this.lastSelectedBody) {
-						this.pivotPoint = clickedb2Space;
+						this.lastSelectedBodyAngle = this.lastSelectedBody.GetAngle();
+						this.initialRotationHandlePosition = clickedb2Space;
 						this.isTurningBody = true;
 					}
 				}
@@ -388,7 +417,7 @@ export default class Testb2World {
 
 		const onDebugMouseUp = (mouseUp: MouseEvent) => {
 			this.selectedBody = undefined;
-			this.pivotPoint = undefined;
+			this.initialRotationHandlePosition = undefined;
 			this.isTurningBody = false;
 
 			if (this.lastSelectedBody) {
