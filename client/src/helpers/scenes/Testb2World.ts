@@ -290,11 +290,7 @@ export default class Testb2World {
 		}
 		// Responsible for rotation of architecture bodies
 		if (!this.selectedBody && this.lastSelectedBody && this.isTurningBody && this.pivotPoint) {
-			const delta =
-				this.pivotPoint
-					.Clone()
-					.SelfSub(this.cursorPosition)
-					.Normalize() * 10;
+			const delta = this.pivotPoint.Clone().SelfSub(this.cursorPosition).Normalize() * 10;
 			let coefficient: number = 1;
 			if (this.pivotPoint.x < this.cursorPosition.x) {
 				coefficient = -1;
