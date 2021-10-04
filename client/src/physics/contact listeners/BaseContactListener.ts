@@ -1,4 +1,4 @@
-import { Contact, ContactListener, Fixture } from "box2d";
+import { Body, Contact, ContactListener, Fixture } from "box2d";
 import { translateCategoryBitsToString } from "~/physics/utils/physicsUtils";
 
 import { queueDestruction } from "../managers/destructionManager";
@@ -6,6 +6,8 @@ import { queueDestruction } from "../managers/destructionManager";
 export default class BaseContactListener extends ContactListener {
 	static readonly k_maxContactPoints: number = 2048;
 	private _healthChangeCallbacks: Array<(healthDelta: number) => void> = [];
+	private _bodiesThatHit: Body[] = [];
+
 	listenForHealthChanges(healthChangeCallback: (healthDelta: number) => void) {
 		this._healthChangeCallbacks.push(healthChangeCallback);
 	}
@@ -46,10 +48,16 @@ export default class BaseContactListener extends ContactListener {
 	}
 
 	private _architectureHitsPenalty(architectureFixt: Fixture, penaltyFixt: Fixture) {
-		for (const cb of this._healthChangeCallbacks) {
-			cb(-1);
+		const body = architectureFixt.GetBody();
+
+		if (!this._bodiesThatHit.includes(body)) {
+			for (const cb of this._healthChangeCallbacks) {
+				cb(-1);
+			}
+			queueDestruction(architectureFixt);
 		}
-		queueDestruction(architectureFixt);
+
+		this._bodiesThatHit.push(body);
 	}
 }
 
