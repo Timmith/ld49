@@ -403,8 +403,19 @@ export default class Testb2World {
 		// 0.35 meters wide
 		// 0.6 meters thick base
 
+		function getFirstTouch(touchEvent: TouchEvent) {
+			return touchEvent.touches.item(0)!;
+		}
+
 		const onDebugMouseDown = (mouseClick: MouseEvent) => {
-			const buttonHit = this.gui.rayCastForButton(mouseClick.clientX, mouseClick.clientY);
+			onCursorStart(mouseClick.clientX, mouseClick.clientY);
+		};
+		const onDebugTouchStart = (touchEvent: TouchEvent) => {
+			const touch = getFirstTouch(touchEvent);
+			onCursorStart(touch.clientX, touch.clientY);
+		};
+		const onCursorStart = (x: number, y: number) => {
+			const buttonHit = this.gui.rayCastForButton(x, y);
 
 			if (!buttonHit) {
 				// if (this.readyForLevelStart && !this.noInteract) {
@@ -417,8 +428,8 @@ export default class Testb2World {
 
 					this.colorizeHourglassButton(COLOR_HOURGLASS_AVAILABLE);
 				}
-				this.cursorPosition = this.rayCastConverter!(mouseClick.clientX, mouseClick.clientY);
-				const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
+				this.cursorPosition = this.rayCastConverter!(x, y);
+				const clickedb2Space: Vec2 = this.rayCastConverter!(x, y);
 
 				if (!this.noInteract) {
 					this.selectedBody = queryForSingleArchitectureBody(b2World, clickedb2Space);
@@ -485,6 +496,12 @@ export default class Testb2World {
 		};
 
 		const onDebugMouseUp = (mouseUp: MouseEvent) => {
+			onCursorStop();
+		};
+		const onDebugTouchEnd = (touchEvent: TouchEvent) => {
+			onCursorStop();
+		};
+		const onCursorStop = () => {
 			this.selectedBody = undefined;
 			this.initialRotationHandlePosition = undefined;
 			this.isTurningBody = false;
@@ -495,7 +512,16 @@ export default class Testb2World {
 		};
 
 		const onDebugMouseMove = (mouseMove: MouseEvent) => {
-			this.cursorPosition = this.rayCastConverter!(mouseMove.clientX, mouseMove.clientY);
+			onCursorMove(mouseMove.clientX, mouseMove.clientY);
+		};
+
+		const onDebugTouchMove = (touchEvent: TouchEvent) => {
+			const touch = getFirstTouch(touchEvent);
+			onCursorMove(touch.clientX, touch.clientY);
+		};
+
+		const onCursorMove = (x: number, y: number) => {
+			this.cursorPosition = this.rayCastConverter!(x, y);
 			if (this.selectedBody) {
 				this.selectedBody.SetLinearVelocity(new Vec2(0.0001, 0));
 				// hacky way of getting the currently dragged about piece to interact with other pieces
@@ -505,6 +531,9 @@ export default class Testb2World {
 		document.addEventListener("mousedown", onDebugMouseDown, false);
 		document.addEventListener("mouseup", onDebugMouseUp, false);
 		document.addEventListener("mousemove", onDebugMouseMove, false);
+		document.addEventListener("touchstart", onDebugTouchStart, false);
+		document.addEventListener("touchend", onDebugTouchEnd, false);
+		document.addEventListener("touchmove", onDebugTouchMove, false);
 
 		this.state = "waitingForInput";
 	} //+++++++++++++++++++++++++++END OF CONSTRUCTOR CURLY BRACKET++++++++++++++++++++++++++++++++//

@@ -3,7 +3,7 @@ import device from "~/device";
 import { getUrlColor } from "~/utils/location";
 
 const FOV = 35;
-const MOBILE_FOV = 28;
+const MOBILE_FOV = 35;
 export class BaseTestScene {
 	autoClear = true;
 	protected scene: Scene;
