@@ -19,7 +19,7 @@ import {
 } from "~/physics/utils/physicsUtils";
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
-import { getUrlColor } from "~/utils/location";
+import { getUrlColor, getUrlFlag } from "~/utils/location";
 import { RayCastConverter } from "~/utils/RayCastConverter";
 import { taskTimer } from "~/utils/taskTimer";
 
@@ -47,6 +47,7 @@ type GameState =
 
 export default class Testb2World {
 	lastSelectedBodyAngle: number;
+	debugMode: boolean = getUrlFlag("debugMode");
 	get state(): GameState {
 		return this._state;
 	}
@@ -79,8 +80,6 @@ export default class Testb2World {
 	penaltyLine: Body;
 	goalLine: Body;
 
-	checkWinCondition: boolean;
-	isGameOver: boolean;
 	stateUpdate: (dt: number) => void;
 
 	stateUpdates: { [K in GameState]: (dt: number) => void } = {
@@ -88,10 +87,11 @@ export default class Testb2World {
 
 		waitingForInput: (dt: number) => {
 			this.noInteract = false;
-			// this.noInteract = false;
-			// if (this.isStarted) {
-			// 	this.state = "playing";
-			// }
+
+			if (this.player.currentHealth === 0) {
+				this.gameOver();
+				this.state = "gameOver";
+			}
 		},
 
 		playing: (dt: number) => {
@@ -127,6 +127,7 @@ export default class Testb2World {
 				// if (this.initialRotationHandlePosition.x < this.cursorPosition.x) {
 				// 	coefficient = -1;
 				// }
+
 				this.lastSelectedBody.SetAngularVelocity(0.001);
 
 				this.lastSelectedBody.SetAngle(angleDelta + this.lastSelectedBodyAngle);
@@ -147,7 +148,6 @@ export default class Testb2World {
 				this.state = "settling";
 			} else if (this.player.currentHealth === 0) {
 				this.gameOver();
-
 				this.state = "gameOver";
 			}
 		},
@@ -179,7 +179,7 @@ export default class Testb2World {
 					}
 				});
 
-				console.log("Congrats, you passed the first level!");
+				console.log("Congrats, you passed the level!");
 				if (this.nextLevelCallback) {
 					this.nextLevelCallback();
 				}
@@ -304,7 +304,7 @@ export default class Testb2World {
 		createStaticBox(this.b2World, 1, -0.9, 0.2, 0.1);
 
 		this.penaltyLine = createSensorBox(this.b2World, 0, -1.5, 10, 0.1, ["penalty"], ["architecture"]);
-		this.goalLine = createSensorBox(this.b2World, 0, -0.25, 10, 0.1, ["goal"], ["architecture"]);
+		this.goalLine = createSensorBox(this.b2World, 0, -0.25, 10, 0.1, ["goal"], ["architecture", "environment"]);
 
 		this.currentLinearDamping = 5;
 		this.currentAngularDamping = 5;
@@ -353,44 +353,6 @@ export default class Testb2World {
 				this.cursorPosition = this.rayCastConverter!(mouseClick.clientX, mouseClick.clientY);
 				const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
 
-				if (isKeyQDown) {
-					const { meshName, colliderName } = getArchitecturePiece();
-					createArchitectMeshAndFixtures({
-						x: clickedb2Space.x,
-						y: clickedb2Space.y,
-						angle: 0,
-						meshName,
-						colliderName,
-						categoryArray: ["architecture"],
-						maskArray: ["penalty", "environment", "architecture", "goal"]
-					}).then(pillar => {
-						this.applyCurrentAtmosphericDamping(pillar.body);
-						this.activeArchitectureBodies.push(pillar.body);
-					});
-				}
-				if (isKeyZDown) {
-					const circleBody = createImprovedPhysicsCircle(
-						b2World,
-						clickedb2Space.x,
-						clickedb2Space.y,
-						0.2,
-						["architecture"],
-						["penalty", "environment", "architecture", "goal"],
-						this.player
-					);
-					this.applyCurrentAtmosphericDamping(circleBody);
-					this.activeArchitectureBodies.push(circleBody);
-				}
-				if (isKeyXDown) {
-					this.turnGravityOn(b2World, this.applyCurrentAtmosphericDamping);
-				}
-				if (isKeyCDown) {
-					this.turnGravityOff(b2World, this.applyCurrentAtmosphericDamping);
-				}
-				if (isKeyVDown) {
-					//
-				}
-
 				if (!this.noInteract) {
 					this.selectedBody = queryForSingleArchitectureBody(b2World, clickedb2Space);
 
@@ -405,6 +367,46 @@ export default class Testb2World {
 						this.lastSelectedBodyAngle = this.lastSelectedBody.GetAngle();
 						this.initialRotationHandlePosition = clickedb2Space;
 						this.isTurningBody = true;
+					}
+				}
+
+				if (this.debugMode) {
+					if (isKeyQDown) {
+						const { meshName, colliderName } = getArchitecturePiece();
+						createArchitectMeshAndFixtures({
+							x: clickedb2Space.x,
+							y: clickedb2Space.y,
+							angle: 0,
+							meshName,
+							colliderName,
+							categoryArray: ["architecture"],
+							maskArray: ["penalty", "environment", "architecture", "goal"]
+						}).then(pillar => {
+							this.applyCurrentAtmosphericDamping(pillar.body);
+							this.activeArchitectureBodies.push(pillar.body);
+						});
+					}
+					if (isKeyZDown) {
+						const circleBody = createImprovedPhysicsCircle(
+							b2World,
+							clickedb2Space.x,
+							clickedb2Space.y,
+							0.2,
+							["architecture"],
+							["penalty", "environment", "architecture", "goal"],
+							this.player
+						);
+						this.applyCurrentAtmosphericDamping(circleBody);
+						this.activeArchitectureBodies.push(circleBody);
+					}
+					if (isKeyXDown) {
+						this.turnGravityOn(b2World, this.applyCurrentAtmosphericDamping);
+					}
+					if (isKeyCDown) {
+						this.turnGravityOff(b2World, this.applyCurrentAtmosphericDamping);
+					}
+					if (isKeyVDown) {
+						//
 					}
 				}
 
@@ -492,7 +494,6 @@ export default class Testb2World {
 		console.log("Sorry, you lost!");
 
 		this.isStarted = false;
-
 		this.player.currentLevel = 0;
 		this.b2Preview.offset.y = this.player.currentLevel;
 		this.selectedBody = undefined;
