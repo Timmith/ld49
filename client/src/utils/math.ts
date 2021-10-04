@@ -56,11 +56,7 @@ export function get2DPositionOnPlane(camera: Camera, cameraWorldPos: Vector3, x:
 	// __cameraPosition.set(0, 0, 0)
 	// camera.localToWorld(__cameraPosition)
 	ray.origin.copy(cameraWorldPos);
-	ray.direction
-		.set(x, y, 0.5)
-		.unproject(camera)
-		.sub(cameraWorldPos)
-		.normalize();
+	ray.direction.set(x, y, 0.5).unproject(camera).sub(cameraWorldPos).normalize();
 
 	ray.intersectPlane(plane, intersection);
 	return intersection;
@@ -137,11 +133,7 @@ const __targetVec = new Vector3();
 export function hitTestPlaneAtPixel(x: number, y: number, plane: Plane, camera: Camera) {
 	if (camera instanceof PerspectiveCamera) {
 		__ray.origin.setFromMatrixPosition(camera.matrixWorld);
-		__ray.direction
-			.set(x, y, 0.5)
-			.unproject(camera)
-			.sub(__ray.origin)
-			.normalize();
+		__ray.direction.set(x, y, 0.5).unproject(camera).sub(__ray.origin).normalize();
 	} else if (camera instanceof OrthographicCamera) {
 		__ray.origin.set(x, y, (camera.near + camera.far) / (camera.near - camera.far)).unproject(camera); // set origin in plane of camera
 		__ray.direction.set(0, 0, -1).transformDirection(camera.matrixWorld);
@@ -232,10 +224,7 @@ export function zeroXY(destination: XY) {
 
 const tempDistanceVec = new Vec2();
 export function distanceSquaredTo(initialPosition: Vec2, endPosition: Vec2) {
-	return tempDistanceVec
-		.Copy(initialPosition)
-		.SelfSub(endPosition)
-		.LengthSquared();
+	return tempDistanceVec.Copy(initialPosition).SelfSub(endPosition).LengthSquared();
 }
 
 export function distanceTo(initialPosition: Vec2, endPosition: Vec2) {
