@@ -22,6 +22,12 @@ export default class BaseContactListener extends ContactListener {
 		} else if (fixtB_category === "architecture" && fixtA_category === "penalty") {
 			architectureHitsPenalty(fixtureB, fixtureA);
 		}
+
+		// if (fixtA_category === "architecture" && fixtB_category === "goal") {
+		// 	architectureHitsGoal(fixtureA, fixtureB);
+		// } else if (fixtB_category === "architecture" && fixtA_category === "goal") {
+		// 	architectureHitsGoal(fixtureB, fixtureA);
+		// }
 	}
 
 	EndContact(contact: Contact) {
@@ -44,8 +50,14 @@ function architectureHitsPenalty(architectureFixt: Fixture, penaltyFixt: Fixture
 			player.currentHealth -= 1;
 		}
 
-		console.log(player.currentHealth);
+		// console.log(player.currentHealth);
 		queueDestruction(architectureFixt);
 	}
 	// console.log("You have incurred a penalty!!");
 }
+
+// function architectureHitsGoal(fixtureA: Fixture, fixtureB: Fixture) {
+
+// 	throw new Error("Function not implemented.");
+
+// }
