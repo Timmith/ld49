@@ -20,12 +20,12 @@ import {
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
 import { getUrlColor } from "~/utils/location";
-import { randInt } from "~/utils/math";
 import { RayCastConverter } from "~/utils/RayCastConverter";
 import { taskTimer } from "~/utils/taskTimer";
 
 import { startControls } from "../../controllers/startControls";
 import { getMetaContactListener } from "../../physics/utils/contactListenerUtils";
+import { getArchitecturePiece } from "../architectureLibrary";
 
 const FOV = 35;
 const MOBILE_FOV = 28;
@@ -140,24 +140,14 @@ export default class Testb2World {
 		this.currentLinearDamping = 5;
 		this.currentAngularDamping = 5;
 
-		const architectureLibrary = {
-			column1: 2,
-			column2: 2,
-			column3: 2,
-			column4: 2,
-			column5: 1,
-			vase: 2
-		};
-		const baseModels = Object.keys(architectureLibrary);
-
 		this.pieceSpawnPoints9.forEach(vec2 => {
-			const meshName = baseModels[randInt(baseModels.length)] as keyof typeof architectureLibrary;
+			const { meshName, colliderName } = getArchitecturePiece();
 			createArchitectMeshAndFixtures({
 				x: vec2.x,
 				y: vec2.y,
 				angle: 0,
 				meshName,
-				colliderName: "collider" + randInt(architectureLibrary[meshName], 1),
+				colliderName,
 				categoryArray: ["architecture"],
 				maskArray: ["penalty", "environment", "architecture", "goal"]
 			}).then(pillar => {
@@ -191,13 +181,13 @@ export default class Testb2World {
 			const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
 
 			if (isKeyQDown) {
+				const { meshName, colliderName } = getArchitecturePiece();
 				createArchitectMeshAndFixtures({
 					x: clickedb2Space.x,
 					y: clickedb2Space.y,
 					angle: 0,
-					meshName: "column1",
-					// colliderName: "collider" + randInt(3, 1),
-					colliderName: "collider1",
+					meshName,
+					colliderName,
 					categoryArray: ["architecture"],
 					maskArray: ["penalty", "environment", "architecture", "goal"]
 				}).then(pillar => {
