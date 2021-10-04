@@ -573,7 +573,7 @@ export default class Testb2World {
 		const scene = new Scene();
 		const bgColor: Color = getUrlColor("bgColor", new Color(0x231f20)); //soft dark grey background
 		//const bgColor: Color = getUrlColor("bgColor", new Color(0x000000)); //black background
-		scene.fog = new Fog(bgColor.getHex(), 0, 60);
+		scene.fog = new Fog(bgColor.getHex(), 0, 160);
 		scene.autoUpdate = false;
 		scene.matrixAutoUpdate = false;
 		const camera = new PerspectiveCamera(device.isMobile ? MOBILE_FOV : FOV, device.aspect, 0.1, 100);

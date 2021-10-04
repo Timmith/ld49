@@ -12,7 +12,7 @@ export class BaseTestScene {
 	constructor() {
 		const scene = new Scene();
 
-		const bgColor: Color = getUrlColor("bgColor", new Color(0x7f7f7f));
+		const bgColor: Color = getUrlColor("bgColor", new Color(0xafcfff));
 		scene.fog = new Fog(bgColor.getHex(), 0, 60);
 		scene.autoUpdate = false;
 		scene.matrixAutoUpdate = false;

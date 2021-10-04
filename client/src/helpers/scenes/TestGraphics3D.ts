@@ -1,5 +1,6 @@
 import { Vec2 } from "box2d";
-import { Plane, Vector3, WebGLRenderer } from "three";
+import { DoubleSide, Mesh, MeshBasicMaterial, MeshStandardMaterial, Plane, Vector3, WebGLRenderer } from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import device from "~/device";
 import TestGraphicsPack from "~/helpers/scenes/TestGraphicsPack";
 import { Easing } from "~/misc/animation/Easing";
@@ -58,6 +59,46 @@ export default class TestGraphics3D extends TestLightingScene {
 		this.b2World.autoClear = false;
 
 		this.graphicsPack = new TestGraphicsPack(this.scene);
+
+		const initArt = async () => {
+			const gltfLoader = new GLTFLoader();
+			const gltf = await gltfLoader.loadAsync("game/models/art.glb");
+			for (const child of gltf.scene.children) {
+				child.traverse(obj => {
+					if (obj instanceof Mesh) {
+						obj.castShadow = true;
+						obj.receiveShadow = true;
+					}
+				});
+			}
+			const stage = gltf.scene;
+			const heightGoal = stage.getObjectByName("heightGoal");
+			const dangerZone = stage.getObjectByName("dangerZone");
+			stage.scale.multiplyScalar(0.1);
+			stage.rotation.y += Math.PI;
+			stage.position.y -= 1.5;
+			this.scene.add(stage);
+			if (heightGoal) {
+				heightGoal.scale.multiplyScalar(2);
+				this.scene.attach(heightGoal);
+				heightGoal.castShadow = false;
+				heightGoal.receiveShadow = false;
+				heightGoal.position.y += 1;
+			}
+			if (dangerZone) {
+				dangerZone.scale.multiplyScalar(2);
+				this.scene.attach(dangerZone);
+				dangerZone.position.y -= 0.15;
+				if (dangerZone instanceof Mesh && dangerZone.material instanceof MeshStandardMaterial) {
+					dangerZone.castShadow = false;
+					dangerZone.receiveShadow = false;
+					const map = dangerZone.material.map;
+					dangerZone.material = new MeshBasicMaterial({ map, transparent: true, opacity: 0.5 });
+				}
+				// dangerZone.position.y += 1
+			}
+		};
+		initArt();
 	}
 
 	update(dt: number) {

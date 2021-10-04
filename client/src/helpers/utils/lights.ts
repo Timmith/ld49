@@ -96,7 +96,7 @@ export function addPrettyLights(scene: Scene, bgColor: Color) {
 		// sunLightCamHelper.updateMatrixWorld(true)
 	}
 
-	scene.fog = new Fog(bgColor.getHex(), 0, 30);
+	scene.fog = new Fog(bgColor.getHex(), 0, 50);
 	return {
 		sunLight,
 		ambientLight
