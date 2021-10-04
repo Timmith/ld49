@@ -34,9 +34,9 @@ renderer.shadowMap.type = PCFShadowMap;
 renderer.autoClear = false;
 
 const downsample = new NiceParameter(
-	"pixel-down-sample-2",
+	"pixel-down-sample-3",
 	"Graphics Quality",
-	2,
+	0,
 	0,
 	10,
 	v => v,
