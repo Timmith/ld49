@@ -57,7 +57,7 @@ class ArchitectureModelFactory {
 
 			const gltfLoader = new GLTFLoader();
 
-			const gltf = await gltfLoader.loadAsync("game/models/columns.glb");
+			const gltf = await gltfLoader.loadAsync("game/models/architecture.glb");
 			this._gltf = gltf;
 			for (const child of gltf.scene.children) {
 				child.traverse(obj => {
@@ -82,7 +82,7 @@ class ArchitectureModelFactory {
 	}
 
 	private _makeMesh(params: RequestParams) {
-		const mesh = cloneMeshByName(this._gltf, "column1");
+		const mesh = cloneMeshByName(this._gltf, params.meshName);
 		const pos = params.body.GetPosition();
 		mesh.position.set(pos.x, -pos.y, 0);
 		if (params.addPivot) {
