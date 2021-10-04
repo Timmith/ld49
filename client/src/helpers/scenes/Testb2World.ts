@@ -36,7 +36,26 @@ let isKeyXDown: boolean = false;
 let isKeyCDown: boolean = false;
 let isKeyVDown: boolean = false;
 
+type GameState =
+	| "uninitialized"
+	| "waitingForInput"
+	| "playing"
+	| "settling"
+	| "checking"
+	| "transitioning"
+	| "gameOver";
+
 export default class Testb2World {
+	get state(): GameState {
+		return this._state;
+	}
+	set state(value: GameState) {
+		if (this.state !== value) {
+			console.log(value);
+			this._state = value;
+			this.stateUpdate = this.stateUpdates[value];
+		}
+	}
 	autoClear = true;
 	gui = new SimpleGUIOverlay();
 	cursorPosition: Vec2;
@@ -46,7 +65,6 @@ export default class Testb2World {
 	player = new Player();
 	activeArchitectureBodies: Body[] = [];
 	inactiveArchitectureBodies: Body[] = [];
-	currentLevel: number = 0;
 
 	pivotPoint: Vec2 | undefined;
 	isTurningBody: boolean;
@@ -61,6 +79,128 @@ export default class Testb2World {
 
 	checkWinCondition: boolean;
 	isGameOver: boolean;
+	stateUpdate: (dt: number) => void;
+
+	stateUpdates: { [K in GameState]: (dt: number) => void } = {
+		uninitialized: (dt: number) => {},
+
+		waitingForInput: (dt: number) => {
+			this.noInteract = false;
+			// this.noInteract = false;
+			// if (this.isStarted) {
+			// 	this.state = "playing";
+			// }
+		},
+
+		playing: (dt: number) => {
+			this.player.currentTimer -= dt;
+
+			// Responsible for click and drag of architecture bodies
+			if (this.selectedBody) {
+				this.selectedBody.SetPosition(this.cursorPosition);
+			}
+			// Responsible for rotation of architecture bodies
+			if (!this.selectedBody && this.lastSelectedBody && this.isTurningBody && this.pivotPoint) {
+				const delta = this.pivotPoint.Clone().SelfSub(this.cursorPosition).Normalize() * 10;
+				let coefficient: number = 1;
+				if (this.pivotPoint.x < this.cursorPosition.x) {
+					coefficient = -1;
+				}
+				this.lastSelectedBody.SetAngularVelocity(coefficient * delta);
+			}
+			// Responsible for level end & checking, settling, gameOver
+			if (this.player.currentTimer < 0) {
+				this.player.currentTimer = 0;
+
+				this.noInteract = true;
+				this.selectedBody = undefined;
+				this.lastSelectedBody = undefined;
+				this.turnGravityOn(this.b2World, this.applyCurrentAtmosphericDamping);
+
+				taskTimer.add(() => {
+					this.state = "checking";
+				}, 5);
+
+				this.state = "settling";
+			} else if (this.player.currentHealth === 0) {
+				this.gameOver();
+
+				this.state = "gameOver";
+			}
+		},
+
+		settling: (dt: number) => {},
+
+		checking: (dt: number) => {
+			let contact = this.goalLine.m_contactList;
+			let won = false;
+			while (contact) {
+				if (contact.contact.IsTouching()) {
+					won = true;
+					break;
+				}
+				contact = contact.next;
+			}
+
+			if (this.player.currentHealth === 0) {
+				won = false;
+			}
+
+			if (won) {
+				this.activeArchitectureBodies.forEach(body => {
+					let fixt = body.GetFixtureList();
+					while (fixt) {
+						const bitMask = makeBitMask(["environment"]);
+						fixt.m_filter.categoryBits = bitMask;
+						fixt = fixt.m_next;
+					}
+				});
+
+				console.log("Congrats, you passed the first level!");
+				if (this.nextLevelCallback) {
+					this.nextLevelCallback();
+				}
+				this.player.currentLevel += 1;
+				this.b2Preview.offset.y = this.player.currentLevel;
+
+				this.turnGravityOff(this.b2World, this.applyCurrentAtmosphericDamping);
+				taskTimer.add(() => {
+					this.pieceSpawnPoints5.forEach(vec2 => {
+						const { meshName, colliderName } = getArchitecturePiece();
+						createArchitectMeshAndFixtures({
+							x: vec2.x,
+							y: vec2.y + this.b2Preview.offset.y,
+							angle: 0,
+							meshName,
+							// "collider" + randInt(3, 1),
+							colliderName,
+							categoryArray: ["architecture"],
+							maskArray: ["penalty", "environment", "architecture", "goal"]
+						}).then(pillar => {
+							this.applyCurrentAtmosphericDamping(pillar.body);
+							this.activeArchitectureBodies.push(pillar.body);
+						});
+					});
+
+					this.goalLine.SetPosition(new Vec2(0, -0.25 + 1 * this.player.currentLevel));
+					this.penaltyLine.SetPosition(new Vec2(0, -1.5 + 1 * this.player.currentLevel));
+					this.player.currentTimer = 20 + this.player.currentLevel * 10;
+					this.player.maxTimer = 20 + this.player.currentLevel * 10;
+
+					this.state = "waitingForInput";
+				}, 2);
+
+				this.state = "transitioning";
+			} else {
+				this.gameOver();
+				this.state = "gameOver";
+			}
+		},
+
+		transitioning: (dt: number) => {},
+
+		gameOver: (dt: number) => {}
+	};
 
 	pieceSpawnPoints5: Vec2[] = [
 		new Vec2(-1.55, -0.35),
@@ -89,6 +229,8 @@ export default class Testb2World {
 	protected camera: Camera;
 	protected bgColor: Color;
 	protected b2Preview: Box2DPreviewMesh;
+
+	private _state: GameState = "uninitialized";
 
 	private b2World: World;
 
@@ -119,7 +261,11 @@ export default class Testb2World {
 		/* Using the MetaContactListener, via either initializing one or regrabbing it from reference,
 		register any ContactListeners for separate contact cases */
 		const mcl = getMetaContactListener();
-		mcl.register(new BaseContactListener());
+		const bcl = new BaseContactListener();
+		bcl.listenForHealthChanges((healthDelta: number) => {
+			this.player.currentHealth = Math.max(0, this.player.currentHealth + healthDelta);
+		});
+		mcl.register(bcl);
 		this.b2World.SetContactListener(mcl);
 
 		/* The Be All And End All Keyboard Listener (a.k.a. THE BUTTON FUNNELER) */
@@ -140,7 +286,7 @@ export default class Testb2World {
 		this.currentLinearDamping = 5;
 		this.currentAngularDamping = 5;
 
-		this.pieceSpawnPoints9.forEach(vec2 => {
+		this.pieceSpawnPoints5.forEach(vec2 => {
 			const { meshName, colliderName } = getArchitecturePiece();
 			createArchitectMeshAndFixtures({
 				x: vec2.x,
@@ -170,69 +316,74 @@ export default class Testb2World {
 		// 0.6 meters thick base
 
 		const onDebugMouseDown = (mouseClick: MouseEvent) => {
-			if (this.readyForLevelStart) {
-				this.isStarted = true;
-				this.readyForLevelStart = false;
-			}
+			const buttonHit = this.gui.rayCastForButton(mouseClick.clientX, mouseClick.clientY);
 
-			this.gui.rayCastForButton(mouseClick.clientX, mouseClick.clientY);
+			if (!buttonHit) {
+				// if (this.readyForLevelStart && !this.noInteract) {
+				// 	this.isStarted = true;
+				// 	this.readyForLevelStart = false;
+				// }
 
-			this.cursorPosition = this.rayCastConverter!(mouseClick.clientX, mouseClick.clientY);
-			const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
-
-			if (isKeyQDown) {
-				const { meshName, colliderName } = getArchitecturePiece();
-				createArchitectMeshAndFixtures({
-					x: clickedb2Space.x,
-					y: clickedb2Space.y,
-					angle: 0,
-					meshName,
-					colliderName,
-					categoryArray: ["architecture"],
-					maskArray: ["penalty", "environment", "architecture", "goal"]
-				}).then(pillar => {
-					this.applyCurrentAtmosphericDamping(pillar.body);
-					this.activeArchitectureBodies.push(pillar.body);
-				});
-			}
-			if (isKeyZDown) {
-				const circleBody = createImprovedPhysicsCircle(
-					b2World,
-					clickedb2Space.x,
-					clickedb2Space.y,
-					0.2,
-					["architecture"],
-					["penalty", "environment", "architecture", "goal"],
-					this.player
-				);
-				this.applyCurrentAtmosphericDamping(circleBody);
-				this.activeArchitectureBodies.push(circleBody);
-			}
-			if (isKeyXDown) {
-				this.turnGravityOn(b2World, this.applyCurrentAtmosphericDamping);
-			}
-			if (isKeyCDown) {
-				this.turnGravityOff(b2World, this.applyCurrentAtmosphericDamping);
-			}
-			if (isKeyVDown) {
-				//
-			}
-
-			if (!this.noInteract) {
-				this.selectedBody = queryForSingleArchitectureBody(b2World, clickedb2Space);
-
-				if (this.selectedBody) {
-					this.lastSelectedBody = this.selectedBody;
-				} else if (!this.selectedBody && this.lastSelectedBody) {
-					this.pivotPoint = clickedb2Space;
-					this.isTurningBody = true;
+				if (this.state === "waitingForInput") {
+					this.state = "playing";
 				}
-			}
+				this.cursorPosition = this.rayCastConverter!(mouseClick.clientX, mouseClick.clientY);
+				const clickedb2Space: Vec2 = this.rayCastConverter!(mouseClick.x, mouseClick.y);
 
-			/* CONSOLE LOG to notify of click in client space versus game space */
-			// console.log(` Client Space				VS		Game Space
-			// 		 X: ${mouseClick.clientX}			X: ${clickedb2Space.x}
-			// 		 Y: ${mouseClick.clientY}			Y: ${clickedb2Space.y}`);
+				if (isKeyQDown) {
+					const { meshName, colliderName } = getArchitecturePiece();
+					createArchitectMeshAndFixtures({
+						x: clickedb2Space.x,
+						y: clickedb2Space.y,
+						angle: 0,
+						meshName,
+						colliderName,
+						categoryArray: ["architecture"],
+						maskArray: ["penalty", "environment", "architecture", "goal"]
+					}).then(pillar => {
+						this.applyCurrentAtmosphericDamping(pillar.body);
+						this.activeArchitectureBodies.push(pillar.body);
+					});
+				}
+				if (isKeyZDown) {
+					const circleBody = createImprovedPhysicsCircle(
+						b2World,
+						clickedb2Space.x,
+						clickedb2Space.y,
+						0.2,
+						["architecture"],
+						["penalty", "environment", "architecture", "goal"],
+						this.player
+					);
+					this.applyCurrentAtmosphericDamping(circleBody);
+					this.activeArchitectureBodies.push(circleBody);
+				}
+				if (isKeyXDown) {
+					this.turnGravityOn(b2World, this.applyCurrentAtmosphericDamping);
+				}
+				if (isKeyCDown) {
+					this.turnGravityOff(b2World, this.applyCurrentAtmosphericDamping);
+				}
+				if (isKeyVDown) {
+					//
+				}
+
+				if (!this.noInteract) {
+					this.selectedBody = queryForSingleArchitectureBody(b2World, clickedb2Space);
+
+					if (this.selectedBody) {
+						this.lastSelectedBody = this.selectedBody;
+					} else if (!this.selectedBody && this.lastSelectedBody) {
+						this.pivotPoint = clickedb2Space;
+						this.isTurningBody = true;
+					}
+				}
+
+				/* CONSOLE LOG to notify of click in client space versus game space */
+				// console.log(` Client Space				VS		Game Space
+				// 		 X: ${mouseClick.clientX}			X: ${clickedb2Space.x}
+				// 		 Y: ${mouseClick.clientY}			Y: ${clickedb2Space.y}`);
+			}
 		};
 
 		const onDebugMouseUp = (mouseUp: MouseEvent) => {
@@ -256,6 +407,8 @@ export default class Testb2World {
 		document.addEventListener("mousedown", onDebugMouseDown, false);
 		document.addEventListener("mouseup", onDebugMouseUp, false);
 		document.addEventListener("mousemove", onDebugMouseMove, false);
+
+		this.state = "waitingForInput";
 	} //+++++++++++++++++++++++++++END OF CONSTRUCTOR CURLY BRACKET++++++++++++++++++++++++++++++++//
 
 	HandleKey(code: KeyboardCodes, down: boolean) {
@@ -285,169 +438,16 @@ export default class Testb2World {
 		this.scene.updateMatrixWorld(false);
 		this.b2World.Step(dt, 10, 4);
 
-		// Responsible for click and drag of architecture bodies
-		if (this.selectedBody) {
-			this.selectedBody.SetPosition(this.cursorPosition);
-		}
-		// Responsible for rotation of architecture bodies
-		if (!this.selectedBody && this.lastSelectedBody && this.isTurningBody && this.pivotPoint) {
-			const delta = this.pivotPoint.Clone().SelfSub(this.cursorPosition).Normalize() * 10;
-			let coefficient: number = 1;
-			if (this.pivotPoint.x < this.cursorPosition.x) {
-				coefficient = -1;
-			}
-			this.lastSelectedBody.SetAngularVelocity(coefficient * delta);
-		}
-
 		for (const pu of this._postUpdates) {
 			pu(dt);
 		}
 		if (this.b2Preview) {
 			this.b2Preview.update(dt);
 		}
+
 		processDestructions();
 		processHUD(dt, this.player);
-
-		// Starts the Level Timer
-		if (this.isStarted) {
-			this.player.currentTimer -= dt;
-			if (this.player.currentTimer < 0) {
-				this.player.currentTimer = 0;
-				this.isTimerOver = true;
-				this.isStarted = false;
-			}
-		}
-
-		// Checks Win Condition when isTimerOver
-		if (this.isTimerOver) {
-			this.noInteract = true;
-
-			this.selectedBody = undefined;
-			this.lastSelectedBody = undefined;
-
-			this.turnGravityOn(this.b2World, this.applyCurrentAtmosphericDamping);
-			taskTimer.add(() => {
-				let contact = this.goalLine.m_contactList;
-				this.currentLevelWinCondition = false;
-
-				while (contact) {
-					if (contact.contact.IsTouching()) {
-						this.currentLevelWinCondition = true;
-						break;
-					}
-					contact = contact.next;
-				}
-
-				this.activeArchitectureBodies.forEach(body => {
-					let fixt = body.GetFixtureList();
-					while (fixt) {
-						const bitMask = makeBitMask(["environment"]);
-						fixt.m_filter.categoryBits = bitMask;
-						fixt = fixt.m_next;
-					}
-				});
-
-				this.noInteract = false;
-			}, 5);
-
-			this.isTimerOver = false;
-		}
-
-		if (this.currentLevelWinCondition === true) {
-			console.log("Congrats, you passed the first level!");
-			if (this.nextLevelCallback) {
-				this.nextLevelCallback();
-			}
-			this.currentLevel += 1;
-			this.b2Preview.offset.y = this.currentLevel;
-
-			// this.activeArchitectureBodies.forEach(body => {
-			// 	let fixt = body.GetFixtureList();
-			// 	while (fixt) {
-			// 		const bitMask = makeBitMask(["environment"]);
-			// 		fixt.m_filter.categoryBits = bitMask;
-			// 		fixt = fixt.m_next;
-			// 	}
-			// });
-
-			this.turnGravityOff(this.b2World, this.applyCurrentAtmosphericDamping);
-			taskTimer.add(() => {
-				this.pieceSpawnPoints9.forEach(vec2 => {
-					createArchitectMeshAndFixtures({
-						x: vec2.x,
-						y: vec2.y + this.b2Preview.offset.y,
-						angle: 0,
-						meshName: "column1",
-						// colliderName: "collider" + randInt(3, 1),
-						colliderName: "collider1",
-						categoryArray: ["architecture"],
-						maskArray: ["penalty", "environment", "architecture", "goal"]
-					}).then(pillar => {
-						this.applyCurrentAtmosphericDamping(pillar.body);
-						this.activeArchitectureBodies.push(pillar.body);
-					});
-				});
-				this.goalLine.SetPosition(new Vec2(0, -0.25 + 1 * this.currentLevel));
-				this.penaltyLine.SetPosition(new Vec2(0, -1.5 + 1 * this.currentLevel));
-				this.player.currentTimer = 20 + this.currentLevel * 10;
-				this.player.maxTimer = 20 + this.currentLevel * 10;
-				this.readyForLevelStart = true;
-			}, 2);
-
-			this.currentLevelWinCondition = undefined;
-
-			// const centerOfScreen = this.rayCastConverter!(window.innerWidth / 2, window.innerHeight / 2);
-
-			// this.goalLine.SetPosition(new Vec2(0, -0.25 * (0.8 * this.currentLevel)));
-			// this.penaltyLine.SetPosition(new Vec2(0, -1.5 * (0.8 * this.currentLevel)));
-		} else if (this.currentLevelWinCondition === false) {
-			console.log("Sorry, you lost!");
-			this.currentLevel = 0;
-			this.b2Preview.offset.y = this.currentLevel;
-
-			this.selectedBody = undefined;
-			this.lastSelectedBody = undefined;
-
-			if (this.gameResetCallback) {
-				this.gameResetCallback();
-			}
-
-			this.activeArchitectureBodies.forEach(body => {
-				const fixt = body.GetFixtureList();
-				if (fixt) {
-					queueDestruction(fixt);
-				}
-			});
-			this.activeArchitectureBodies.length = 0;
-			this.currentLevelWinCondition = undefined;
-
-			this.turnGravityOff(this.b2World, this.applyCurrentAtmosphericDamping);
-			taskTimer.add(() => {
-				this.pieceSpawnPoints9.forEach(vec2 => {
-					createArchitectMeshAndFixtures({
-						x: vec2.x,
-						y: vec2.y + this.b2Preview.offset.y,
-						angle: 0,
-						meshName: "column1",
-						// colliderName: "collider" + randInt(3, 1),
-						colliderName: "collider1",
-						categoryArray: ["architecture"],
-						maskArray: ["penalty", "environment", "architecture", "goal"]
-					}).then(pillar => {
-						this.applyCurrentAtmosphericDamping(pillar.body);
-						this.activeArchitectureBodies.push(pillar.body);
-					});
-				});
-				this.goalLine.SetPosition(new Vec2(0, -0.25 + 1 * this.currentLevel));
-				this.penaltyLine.SetPosition(new Vec2(0, -1.5 + 1 * this.currentLevel));
-				this.player.currentTimer = 20 + this.currentLevel * 10;
-				this.player.maxTimer = 20 + this.currentLevel * 10;
-				this.player.currentHealth = 5;
-				this.readyForLevelStart = true;
-			}, 2);
-		}
-
-		// TODO
+		this.stateUpdate(dt);
 	}
 
 	render(renderer: WebGLRenderer, dt: number) {
@@ -457,6 +457,55 @@ export default class Testb2World {
 		}
 		renderer.render(this.scene, this.camera);
 		this.gui.render(renderer);
+	}
+
+	private gameOver() {
+		console.log("Sorry, you lost!");
+
+		this.isStarted = false;
+
+		this.player.currentLevel = 0;
+		this.b2Preview.offset.y = this.player.currentLevel;
+		this.selectedBody = undefined;
+		this.lastSelectedBody = undefined;
+
+		if (this.gameResetCallback) {
+			this.gameResetCallback();
+		}
+
+		this.activeArchitectureBodies.forEach(body => {
+			const fixt = body.GetFixtureList();
+			if (fixt) {
+				queueDestruction(fixt);
+			}
+		});
+		this.activeArchitectureBodies.length = 0;
+
+		this.turnGravityOff(this.b2World, this.applyCurrentAtmosphericDamping);
+		taskTimer.add(() => {
+			this.pieceSpawnPoints5.forEach(vec2 => {
+				const { meshName, colliderName } = getArchitecturePiece();
+				createArchitectMeshAndFixtures({
+					x: vec2.x,
+					y: vec2.y + this.b2Preview.offset.y,
+					angle: 0,
+					meshName,
+					// "collider" + randInt(3, 1),
+					colliderName,
+					categoryArray: ["architecture"],
+					maskArray: ["penalty", "environment", "architecture", "goal"]
+				}).then(pillar => {
+					this.applyCurrentAtmosphericDamping(pillar.body);
+					this.activeArchitectureBodies.push(pillar.body);
+				});
+			});
+			this.goalLine.SetPosition(new Vec2(0, -0.25 + 1 * this.player.currentLevel));
+			this.penaltyLine.SetPosition(new Vec2(0, -1.5 + 1 * this.player.currentLevel));
+			this.player.currentTimer = 20 + this.player.currentLevel * 10;
+			this.player.maxTimer = 20 + this.player.currentLevel * 10;
+			this.player.currentHealth = 5;
+			this.state = "waitingForInput";
+		}, 2);
 	}
 
 	private turnGravityOff(b2World: World, applyCurrentAtmosphericDamping: (body: Body) => void) {
@@ -504,6 +553,8 @@ export default class Testb2World {
 export class Player {
 	currentHealth: number = 5;
 	maxHealth: number = 5;
+
+	currentLevel = 0;
 
 	currentTimer: number = 20;
 	maxTimer: number = 20;
