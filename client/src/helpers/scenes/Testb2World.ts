@@ -27,6 +27,7 @@ import {
 	makeBitMask,
 	queryForSingleArchitectureBody
 } from "~/physics/utils/physicsUtils";
+import { loadLevelDataFromLocalStorage, saveLevelDataToLocalStorage } from "~/physics/utils/serialUtils";
 import SimpleGUIOverlay, { ButtonUserData } from "~/ui/SimpleGUIOverlay";
 import { COLOR_HOURGLASS_AVAILABLE, COLOR_HOURGLASS_UNAVAILABLE } from "~/utils/colorLibrary";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
@@ -535,6 +536,15 @@ export default class Testb2World {
 		document.addEventListener("touchend", onDebugTouchEnd, false);
 		document.addEventListener("touchmove", onDebugTouchMove, false);
 
+		getKeyboardInput().addListener((key, down) => {
+			if (down) {
+				if (key === "F5") {
+					saveLevelDataToLocalStorage(this.b2World);
+				} else if (key === "F9") {
+					loadLevelDataFromLocalStorage(this.b2World);
+				}
+			}
+		});
 		this.state = "waitingForInput";
 	} //+++++++++++++++++++++++++++END OF CONSTRUCTOR CURLY BRACKET++++++++++++++++++++++++++++++++//
 
@@ -609,7 +619,7 @@ export default class Testb2World {
 		this.activeArchitectureBodies.forEach(body => {
 			const fixt = body.GetFixtureList();
 			if (fixt) {
-				queueDestruction(fixt);
+				queueDestruction(fixt.GetBody());
 			}
 		});
 		this.activeArchitectureBodies.length = 0;

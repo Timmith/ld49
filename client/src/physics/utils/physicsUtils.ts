@@ -169,6 +169,9 @@ export interface ArchitectParams {
 }
 
 export function isArchitectParams(params: any): params is ArchitectParams {
+	if (!params) {
+		return false;
+	}
 	if (typeof params !== "object") {
 		return false;
 	}

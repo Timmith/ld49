@@ -1,32 +1,35 @@
-import { Fixture } from "box2d";
+import { Body } from "box2d";
 
 import { getBodyEventManager } from "./bodyEventManager";
 import { getBodyMeshEventManager } from "./bodyMeshEventManager";
 
-const destructionQueue: Fixture[] = [];
+const destructionQueue: Body[] = [];
+const destructionQueueClearedCallbacks: Array<() => void> = [];
 
-export function queueDestruction(fixt: Fixture) {
-	// if (!fixt.GetBody().GetUserData()) {
-	// 	throw new Error("Data is null");
-	// }
+export function queueDestruction(body: Body) {
+	destructionQueue.push(body);
+}
 
-	destructionQueue.push(fixt);
+export function onDestructionQueueCleared(callback: () => void) {
+	destructionQueueClearedCallbacks.push(callback);
 }
 
 export function processDestructions() {
 	if (destructionQueue.length > 0) {
-		for (const fixt of destructionQueue) {
-			destructBody(fixt);
+		for (const body of destructionQueue) {
+			destructBody(body);
 		}
-
 		destructionQueue.length = 0;
+	}
+	if (destructionQueueClearedCallbacks.length > 0) {
+		for (const cb of destructionQueueClearedCallbacks) {
+			cb();
+		}
+		destructionQueueClearedCallbacks.length = 0;
 	}
 }
 
-function destructBody(fixt: Fixture) {
-	//console.log("DESTRUCTION!!");
-	const body = fixt.GetBody();
-
+function destructBody(body: Body) {
 	try {
 		getBodyEventManager().destroyBody(body);
 		getBodyMeshEventManager().destroyBody(body);

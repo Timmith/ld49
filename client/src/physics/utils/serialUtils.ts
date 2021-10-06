@@ -1,18 +1,21 @@
 import { World } from "box2d";
-// import { Player } from "~/helpers/scenes/Testb2World";
+
+import { onDestructionQueueCleared, queueDestruction } from "../managers/destructionManager";
 
 import { ArchitectParams, createArchitectMeshAndFixtures, isArchitectParams } from "./physicsUtils";
+// import { Player } from "~/helpers/scenes/Testb2World";
 
 export type WorldData = ArchitectParams[];
 
 export async function loadLevelData(b2World: World, data: WorldData): Promise<void> {
-	const bodies = [];
+	const oldBodies = [];
 	for (let body = b2World.GetBodyList(); body; body = body.m_next) {
 		if (isArchitectParams(body.m_userData)) {
-			bodies.push(body);
+			oldBodies.push(body);
 		}
 	}
-	bodies.forEach(body => b2World.DestroyBody(body));
+	oldBodies.forEach(queueDestruction);
+	await new Promise<void>(resolve => onDestructionQueueCleared(resolve));
 
 	await Promise.all(data.map(createArchitectMeshAndFixtures));
 }
@@ -37,6 +40,15 @@ export function saveLevelBeforeUnload(b2World: World) {
 	};
 }
 
-export function saveLevelData(b2World: World) {
+export function saveLevelDataToLocalStorage(b2World: World) {
 	localStorage.setItem("level", JSON.stringify(serializeWorld(b2World)));
+}
+
+export function loadLevelDataFromLocalStorage(b2World: World) {
+	const dataString = localStorage.getItem("level");
+	if (dataString) {
+		loadLevelData(b2World, JSON.parse(dataString));
+	} else {
+		console.warn("no level data in localStorage");
+	}
 }

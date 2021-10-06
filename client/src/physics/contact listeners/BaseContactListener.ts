@@ -46,10 +46,11 @@ export default class BaseContactListener extends ContactListener {
 	}
 
 	private _architectureHitsPenalty(architectureFixt: Fixture, penaltyFixt: Fixture) {
+		const architectureBody = architectureFixt.GetBody();
 		for (const cb of this._healthChangeCallbacks) {
-			cb(-1, architectureFixt.GetBody());
+			cb(-1, architectureBody);
 		}
-		queueDestruction(architectureFixt);
+		queueDestruction(architectureBody);
 	}
 }
 
