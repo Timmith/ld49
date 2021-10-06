@@ -36,12 +36,14 @@ export function serializeWorld(b2World: World): WorldData {
 
 export function saveLevelBeforeUnload(b2World: World) {
 	window.onbeforeunload = () => {
-		localStorage.setItem("level", JSON.stringify(serializeWorld(b2World)));
+		saveLevelDataToLocalStorage(b2World);
 	};
 }
 
 export function saveLevelDataToLocalStorage(b2World: World) {
-	localStorage.setItem("level", JSON.stringify(serializeWorld(b2World)));
+	const dataString = JSON.stringify(serializeWorld(b2World));
+	console.log(`saved ${dataString.length * 2} bytes of data`);
+	localStorage.setItem("level", dataString);
 }
 
 export function loadLevelDataFromLocalStorage(b2World: World) {
