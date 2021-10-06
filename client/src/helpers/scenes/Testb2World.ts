@@ -49,6 +49,8 @@ let isKeyXDown: boolean = false;
 let isKeyCDown: boolean = false;
 let isKeyVDown: boolean = false;
 
+const emptyUpdate = (dt: number) => {}
+
 export type GameState =
 	| "uninitialized"
 	| "waitingForInput"
@@ -66,6 +68,136 @@ export default class Testb2World {
 		if (this.state !== value) {
 			console.log(value);
 			this._state = value;
+			switch (value) {
+				case "waitingForInput":
+					this.noInteract = false;
+					break;
+				case "gameOver":
+					this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
+					console.log("Sorry, you lost!");
+					this.thingsThatHurtMe.length = 0;
+
+					this.isStarted = false;
+					this.player.currentLevel = 0;
+					this.b2Preview.offset.y = this.player.currentLevel;
+					this.selectedBody = undefined;
+					this.lastSelectedBody = undefined;
+
+					if (this.gameResetCallback) {
+						this.gameResetCallback();
+					}
+
+					this.activeArchitectureBodies.forEach(body => {
+						const fixt = body.GetFixtureList();
+						if (fixt) {
+							queueDestruction(fixt.GetBody());
+						}
+					});
+					this.activeArchitectureBodies.length = 0;
+
+					this.turnGravityOff(this.b2World, this.applyCurrentAtmosphericDamping);
+					taskTimer.add(() => {
+						this.pieceSpawnPoints5.forEach(vec2 => {
+							const { meshName, colliderName } = getArchitecturePiece();
+							createArchitectMeshAndFixtures({
+								x: vec2.x,
+								y: vec2.y + this.b2Preview.offset.y,
+								angle: 0,
+								meshName,
+								// "collider" + randInt(3, 1),
+								colliderName,
+								categoryArray: ["architecture"],
+								maskArray: ["penalty", "environment", "architecture", "goal"]
+							}).then(pillar => {
+								this.applyCurrentAtmosphericDamping(pillar.body);
+								this.activeArchitectureBodies.push(pillar.body);
+							});
+						});
+						this.goalLine.SetPosition(new Vec2(0, -0.25 + 1 * this.player.currentLevel));
+						this.penaltyLine.SetPosition(new Vec2(0, -1.5 + 1 * this.player.currentLevel));
+						this.player.currentTimer = 20 + this.player.currentLevel * 10;
+						this.player.maxTimer = 20 + this.player.currentLevel * 10;
+						this.player.currentHealth = 5;
+						this.state = "waitingForInput";
+					}, 2);
+					break;
+				case "settling":
+					this.noInteract = true;
+					this.selectedBody = undefined;
+					this.lastSelectedBody = undefined;
+					this.turnGravityOn(this.b2World, this.applyCurrentAtmosphericDamping);
+					this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
+					taskTimer.add(() => {
+						this.state = "checking";
+					}, 5);
+					break;
+				case "checking":
+					let contact = this.goalLine.m_contactList;
+					let won = false;
+					while (contact) {
+						if (contact.contact.IsTouching()) {
+							won = true;
+							break;
+						}
+						contact = contact.next;
+					}
+
+					if (this.player.currentHealth === 0) {
+						won = false;
+					}
+
+					if (won) {
+						this.activeArchitectureBodies.forEach(body => {
+							let fixt = body.GetFixtureList();
+							while (fixt) {
+								const bitMask = makeBitMask(["environment"]);
+								fixt.m_filter.categoryBits = bitMask;
+								fixt = fixt.m_next;
+							}
+						});
+
+						console.log("Congrats, you passed the level!");
+						if (this.nextLevelCallback) {
+							this.nextLevelCallback();
+						}
+						this.player.currentLevel += 1;
+						this.b2Preview.offset.y = this.player.currentLevel;
+
+						this.turnGravityOff(this.b2World, this.applyCurrentAtmosphericDamping);
+						taskTimer.add(() => {
+							this.pieceSpawnPoints5.forEach(vec2 => {
+								const { meshName, colliderName } = getArchitecturePiece();
+								createArchitectMeshAndFixtures({
+									x: vec2.x,
+									y: vec2.y + this.b2Preview.offset.y,
+									angle: 0,
+									meshName,
+									// "collider" + randInt(3, 1),
+									colliderName,
+									categoryArray: ["architecture"],
+									maskArray: ["penalty", "environment", "architecture", "goal"]
+								}).then(pillar => {
+									this.applyCurrentAtmosphericDamping(pillar.body);
+									this.activeArchitectureBodies.push(pillar.body);
+								});
+							});
+
+							this.goalLine.SetPosition(new Vec2(0, -0.25 + 1 * this.player.currentLevel));
+							this.penaltyLine.SetPosition(new Vec2(0, -1.5 + 1 * this.player.currentLevel));
+							this.player.currentTimer = 20 + this.player.currentLevel * 10;
+							this.player.maxTimer = 20 + this.player.currentLevel * 10;
+
+							this.state = "waitingForInput";
+						}, 2);
+
+						this.state = "transitioning";
+					} else {
+						this.state = "gameOver";
+					}
+					break;
+				default:
+				//debugger
+			}
 			this.stateUpdate = this.stateUpdates[value];
 		}
 	}
@@ -107,13 +239,10 @@ export default class Testb2World {
 	stateUpdate: (dt: number) => void;
 
 	stateUpdates: { [K in GameState]: (dt: number) => void } = {
-		uninitialized: (dt: number) => {},
+		uninitialized: emptyUpdate,
 
 		waitingForInput: (dt: number) => {
-			this.noInteract = false;
-
 			if (this.player.currentHealth === 0) {
-				this.gameOver();
 				this.state = "gameOver";
 			}
 		},
@@ -170,98 +299,19 @@ export default class Testb2World {
 			// Responsible for level end & checking, settling, gameOver
 			if (this.player.currentTimer < 0) {
 				this.player.currentTimer = 0;
-
-				this.noInteract = true;
-				this.selectedBody = undefined;
-				this.lastSelectedBody = undefined;
-				this.turnGravityOn(this.b2World, this.applyCurrentAtmosphericDamping);
-
-				taskTimer.add(() => {
-					this.state = "checking";
-				}, 5);
-
 				this.state = "settling";
-
-				this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
 			} else if (this.player.currentHealth === 0) {
-				this.gameOver();
 				this.state = "gameOver";
-				this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
 			}
 		},
 
-		settling: (dt: number) => {},
+		settling: emptyUpdate,
 
-		checking: (dt: number) => {
-			let contact = this.goalLine.m_contactList;
-			let won = false;
-			while (contact) {
-				if (contact.contact.IsTouching()) {
-					won = true;
-					break;
-				}
-				contact = contact.next;
-			}
+		checking: emptyUpdate,
 
-			if (this.player.currentHealth === 0) {
-				won = false;
-			}
+		transitioning: emptyUpdate,
 
-			if (won) {
-				this.activeArchitectureBodies.forEach(body => {
-					let fixt = body.GetFixtureList();
-					while (fixt) {
-						const bitMask = makeBitMask(["environment"]);
-						fixt.m_filter.categoryBits = bitMask;
-						fixt = fixt.m_next;
-					}
-				});
-
-				console.log("Congrats, you passed the level!");
-				if (this.nextLevelCallback) {
-					this.nextLevelCallback();
-				}
-				this.player.currentLevel += 1;
-				this.b2Preview.offset.y = this.player.currentLevel;
-
-				this.turnGravityOff(this.b2World, this.applyCurrentAtmosphericDamping);
-				taskTimer.add(() => {
-					this.pieceSpawnPoints5.forEach(vec2 => {
-						const { meshName, colliderName } = getArchitecturePiece();
-						createArchitectMeshAndFixtures({
-							x: vec2.x,
-							y: vec2.y + this.b2Preview.offset.y,
-							angle: 0,
-							meshName,
-							// "collider" + randInt(3, 1),
-							colliderName,
-							categoryArray: ["architecture"],
-							maskArray: ["penalty", "environment", "architecture", "goal"]
-						}).then(pillar => {
-							this.applyCurrentAtmosphericDamping(pillar.body);
-							this.activeArchitectureBodies.push(pillar.body);
-						});
-					});
-
-					this.goalLine.SetPosition(new Vec2(0, -0.25 + 1 * this.player.currentLevel));
-					this.penaltyLine.SetPosition(new Vec2(0, -1.5 + 1 * this.player.currentLevel));
-					this.player.currentTimer = 20 + this.player.currentLevel * 10;
-					this.player.maxTimer = 20 + this.player.currentLevel * 10;
-
-					this.state = "waitingForInput";
-				}, 2);
-
-				this.state = "transitioning";
-			} else {
-				this.gameOver();
-				this.state = "gameOver";
-				this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
-			}
-		},
-
-		transitioning: (dt: number) => {},
-
-		gameOver: (dt: number) => {}
+		gameOver: emptyUpdate
 	};
 
 	pieceSpawnPoints5: Vec2[] = [
@@ -600,55 +650,6 @@ export default class Testb2World {
 		if (this.hourglassButton) {
 			this.hourglassButton.material.color.copy(color);
 		}
-	}
-
-	private gameOver() {
-		console.log("Sorry, you lost!");
-		this.thingsThatHurtMe.length = 0;
-
-		this.isStarted = false;
-		this.player.currentLevel = 0;
-		this.b2Preview.offset.y = this.player.currentLevel;
-		this.selectedBody = undefined;
-		this.lastSelectedBody = undefined;
-
-		if (this.gameResetCallback) {
-			this.gameResetCallback();
-		}
-
-		this.activeArchitectureBodies.forEach(body => {
-			const fixt = body.GetFixtureList();
-			if (fixt) {
-				queueDestruction(fixt.GetBody());
-			}
-		});
-		this.activeArchitectureBodies.length = 0;
-
-		this.turnGravityOff(this.b2World, this.applyCurrentAtmosphericDamping);
-		taskTimer.add(() => {
-			this.pieceSpawnPoints5.forEach(vec2 => {
-				const { meshName, colliderName } = getArchitecturePiece();
-				createArchitectMeshAndFixtures({
-					x: vec2.x,
-					y: vec2.y + this.b2Preview.offset.y,
-					angle: 0,
-					meshName,
-					// "collider" + randInt(3, 1),
-					colliderName,
-					categoryArray: ["architecture"],
-					maskArray: ["penalty", "environment", "architecture", "goal"]
-				}).then(pillar => {
-					this.applyCurrentAtmosphericDamping(pillar.body);
-					this.activeArchitectureBodies.push(pillar.body);
-				});
-			});
-			this.goalLine.SetPosition(new Vec2(0, -0.25 + 1 * this.player.currentLevel));
-			this.penaltyLine.SetPosition(new Vec2(0, -1.5 + 1 * this.player.currentLevel));
-			this.player.currentTimer = 20 + this.player.currentLevel * 10;
-			this.player.maxTimer = 20 + this.player.currentLevel * 10;
-			this.player.currentHealth = 5;
-			this.state = "waitingForInput";
-		}, 2);
 	}
 
 	private turnGravityOff(b2World: World, applyCurrentAtmosphericDamping: (body: Body) => void) {
