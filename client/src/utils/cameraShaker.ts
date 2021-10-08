@@ -7,7 +7,7 @@ const LOW_HERTZ = 200;
 const HIGH_HERTZ = 6000;
 
 const FOV = 35;
-const MOBILE_FOV = 28;
+const MOBILE_FOV = 35;
 
 class CameraShaker {
 	private set shakeStrength(value: number) {

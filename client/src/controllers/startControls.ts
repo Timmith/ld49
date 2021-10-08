@@ -1,5 +1,5 @@
 import { World } from "box2d";
-import { Player } from "~/helpers/scenes/Testb2World";
+import Player from "~/helpers/Player";
 import { Box2DPreviewMesh } from "~/meshes/Box2DPreviewMesh";
 import { registerHUD } from "~/physics/managers/hudManager";
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";

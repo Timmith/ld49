@@ -14,7 +14,7 @@ import {
 	WebGLRenderer
 } from "three";
 import device from "~/device";
-import { Player } from "~/helpers/scenes/Testb2World";
+import Player from "~/helpers/Player";
 import { canvas } from "~/renderer";
 import TextMesh from "~/text/TextMesh";
 import { removeFromArray } from "~/utils/arrayUtils";

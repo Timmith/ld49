@@ -1,6 +1,6 @@
 // import { Body } from "box2d";
 import { BufferGeometry, Color, Mesh, MeshBasicMaterial } from "three";
-import { Player } from "~/helpers/scenes/Testb2World";
+import Player from "~/helpers/Player";
 import TextMesh from "~/text/TextMesh";
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 // import { removeFromArray } from "~/utils/arrayUtils";

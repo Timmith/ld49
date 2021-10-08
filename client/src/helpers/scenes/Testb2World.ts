@@ -39,6 +39,7 @@ import { taskTimer } from "~/utils/taskTimer";
 import { startControls } from "../../controllers/startControls";
 import { getMetaContactListener } from "../../physics/utils/contactListenerUtils";
 import { getArchitecturePiece } from "../architectureLibrary";
+import Player from "../Player";
 
 const FOV = 35;
 const MOBILE_FOV = 28;
@@ -342,7 +343,6 @@ export default class Testb2World {
 		new Vec2(1.55, -0.35)
 	];
 	currentLevelWinCondition: boolean | undefined;
-	readyForLevelStart: boolean = true;
 
 	protected scene: Scene;
 	protected camera: Camera;
@@ -477,11 +477,6 @@ export default class Testb2World {
 			const buttonHit = this.gui.rayCastForButton(x, y);
 
 			if (!buttonHit) {
-				// if (this.readyForLevelStart && !this.noInteract) {
-				// 	this.isStarted = true;
-				// 	this.readyForLevelStart = false;
-				// }
-
 				if (this.state === "waitingForInput") {
 					this.state = "playing";
 
@@ -594,9 +589,9 @@ export default class Testb2World {
 		getKeyboardInput().addListener((key, down) => {
 			if (down) {
 				if (key === "F5") {
-					saveLevelDataToLocalStorage(this.b2World);
+					saveLevelDataToLocalStorage(this.player, this.b2World);
 				} else if (key === "F9") {
-					loadLevelDataFromLocalStorage(this.b2World);
+					loadLevelDataFromLocalStorage(this.player, this.b2World);
 				}
 			}
 		});
@@ -697,14 +692,4 @@ export default class Testb2World {
 		this.camera = camera;
 		this.bgColor = bgColor;
 	}
-}
-
-export class Player {
-	currentHealth: number = 5;
-	maxHealth: number = 5;
-
-	currentLevel = 0;
-
-	currentTimer: number = 20;
-	maxTimer: number = 20;
 }
