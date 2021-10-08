@@ -1,4 +1,4 @@
-import { Body, Vec2, World } from "box2d";
+import { Body, kinematicBody, LinearStiffness, MouseJoint, MouseJointDef, Vec2, World } from "box2d";
 import {
 	BufferGeometry,
 	Camera,
@@ -28,11 +28,11 @@ import {
 	queryForSingleArchitectureBody
 } from "~/physics/utils/physicsUtils";
 import { loadLevelDataFromLocalStorage, saveLevelDataToLocalStorage } from "~/physics/utils/serialUtils";
+import { __INITIAL_LEVEL_DURATION, __LEVEL_DURATION_INCREMENT } from "~/settings/constants";
 import SimpleGUIOverlay, { ButtonUserData } from "~/ui/SimpleGUIOverlay";
 import { COLOR_HOURGLASS_AVAILABLE, COLOR_HOURGLASS_UNAVAILABLE } from "~/utils/colorLibrary";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
 import { getUrlColor, getUrlFlag } from "~/utils/location";
-import { unlerpClamped, wrap } from "~/utils/math";
 import { RayCastConverter } from "~/utils/RayCastConverter";
 import { taskTimer } from "~/utils/taskTimer";
 
@@ -76,13 +76,9 @@ export default class Testb2World {
 				case "gameOver":
 					this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
 					console.log("Sorry, you lost!");
-					this.thingsThatHurtMe.length = 0;
-
-					this.isStarted = false;
+					this.failedPieces.length = 0;
 					this.player.currentLevel = 0;
 					this.b2Preview.offset.y = this.player.currentLevel;
-					this.selectedBody = undefined;
-					this.lastSelectedBody = undefined;
 
 					if (this.gameResetCallback) {
 						this.gameResetCallback();
@@ -183,8 +179,10 @@ export default class Testb2World {
 
 							this.goalLine.SetPosition(new Vec2(0, -0.25 + 1 * this.player.currentLevel));
 							this.penaltyLine.SetPosition(new Vec2(0, -1.5 + 1 * this.player.currentLevel));
-							this.player.currentTimer = 20 + this.player.currentLevel * 10;
-							this.player.maxTimer = 20 + this.player.currentLevel * 10;
+							this.player.currentTimer =
+								__INITIAL_LEVEL_DURATION + this.player.currentLevel * __LEVEL_DURATION_INCREMENT;
+							this.player.maxTimer =
+								__INITIAL_LEVEL_DURATION + this.player.currentLevel * __LEVEL_DURATION_INCREMENT;
 
 							this.state = "waitingForInput";
 						}, 2);
@@ -215,35 +213,9 @@ export default class Testb2World {
 	set interactive(value: boolean) {
 		this._interactive = value;
 		if (!value) {
-			this.selectedBody = undefined;
-			this.lastSelectedBody = undefined;
+			this.detachCursorJoint();
 		}
 	}
-	lastSelectedBodyAngle: number;
-	debugMode: boolean = getUrlFlag("debugMode");
-	autoClear = true;
-	gui = new SimpleGUIOverlay();
-	cursorPosition: Vec2;
-	selectedBody: Body | undefined;
-	selectedBodyOffset: Vec2;
-	thingsThatHurtMe: Body[] = [];
-
-	player = new Player();
-	activeArchitectureBodies: Body[] = [];
-	inactiveArchitectureBodies: Body[] = [];
-
-	initialRotationHandlePosition: Vec2 | undefined;
-	isTurningBody: boolean;
-	isStarted: boolean = false;
-	isTimerOver: boolean = false;
-
-	currentLinearDamping: number;
-	currentAngularDamping: number;
-
-	penaltyLine: Body;
-	goalLine: Body;
-
-	hourglassButton: Mesh<BufferGeometry, MeshBasicMaterial> | undefined;
 
 	stateUpdate: (dt: number) => void;
 
@@ -259,52 +231,6 @@ export default class Testb2World {
 		playing: (dt: number) => {
 			this.player.currentTimer -= dt;
 
-			// Responsible for click and drag of architecture bodies
-			if (this.selectedBody) {
-				const temp = this.cursorPosition.Clone();
-				temp.SelfSub(this.selectedBodyOffset);
-				this.selectedBody.SetPosition(temp);
-			}
-			// Responsible for rotation of architecture bodies
-			if (
-				!this.selectedBody &&
-				this.lastSelectedBody &&
-				this.isTurningBody &&
-				this.initialRotationHandlePosition
-			) {
-				const initialHandleDelta = this.lastSelectedBody.GetPosition().Clone();
-				initialHandleDelta.SelfSub(this.initialRotationHandlePosition);
-
-				const initialHandleAngle = Math.atan2(initialHandleDelta.y, initialHandleDelta.x);
-
-				const currentHandleDelta = this.lastSelectedBody.GetPosition().Clone();
-				currentHandleDelta.SelfSub(this.cursorPosition);
-
-				const currentHandleAngle = Math.atan2(currentHandleDelta.y, currentHandleDelta.x);
-
-				let angleDelta = wrap(currentHandleAngle - initialHandleAngle, -Math.PI, Math.PI);
-
-				const dist = currentHandleDelta.Length();
-				const strengthRadius = 0.5;
-
-				if (dist < strengthRadius) {
-					angleDelta *= unlerpClamped(0.05, strengthRadius, dist);
-				}
-
-				// const delta = this.initialRotationHandlePosition.Clone().SelfSub(this.cursorPosition).Normalize() * 10;
-				// let coefficient: number = 1;
-				// if (this.initialRotationHandlePosition.x < this.cursorPosition.x) {
-				// 	coefficient = -1;
-				// }
-
-				this.lastSelectedBody.SetAngularVelocity(0.001);
-
-				const currentLastSelectedBodyAngle = this.lastSelectedBody.GetAngle();
-
-				this.lastSelectedBody.SetAngle(angleDelta + currentLastSelectedBodyAngle);
-
-				this.initialRotationHandlePosition.Copy(this.cursorPosition);
-			}
 			// Responsible for level end & checking, settling, gameOver
 			if (this.player.currentTimer < 0) {
 				this.player.currentTimer = 0;
@@ -348,6 +274,26 @@ export default class Testb2World {
 	protected camera: Camera;
 	protected bgColor: Color;
 	protected b2Preview: Box2DPreviewMesh;
+
+	private debugMode: boolean = getUrlFlag("debugMode");
+	private autoClear = true;
+	private gui = new SimpleGUIOverlay();
+	private failedPieces: Body[] = [];
+
+	private player = new Player();
+	private cursorPosition: Vec2;
+	private playerCursorBody: Body;
+	private cursorJoint: MouseJoint | undefined;
+
+	private activeArchitectureBodies: Body[] = [];
+
+	private currentLinearDamping: number;
+	private currentAngularDamping: number;
+
+	private penaltyLine: Body;
+	private goalLine: Body;
+
+	private hourglassButton: Mesh<BufferGeometry, MeshBasicMaterial> | undefined;
 	private _interactive: boolean;
 	private _lastSelectedBody: Body | undefined;
 
@@ -385,8 +331,8 @@ export default class Testb2World {
 		const mcl = getMetaContactListener();
 		const bcl = new BaseContactListener();
 		bcl.listenForHealthChanges((healthDelta: number, body: Body) => {
-			if (!this.thingsThatHurtMe.includes(body)) {
-				this.thingsThatHurtMe.push(body);
+			if (!this.failedPieces.includes(body)) {
+				this.failedPieces.push(body);
 				this.player.currentHealth = Math.max(0, this.player.currentHealth + healthDelta);
 			}
 		});
@@ -408,8 +354,21 @@ export default class Testb2World {
 			);
 			this._postUpdates.push(controls.postUpdate);
 
-			this.hourglassButton = controls.ui.hourglassButton;
+			this.playerCursorBody = createImprovedPhysicsCircle(
+				this.b2World,
+				0,
+				0,
+				0.05,
+				undefined,
+				undefined,
+				undefined,
+				true,
+				undefined,
+				undefined,
+				kinematicBody
+			);
 
+			this.hourglassButton = controls.ui.hourglassButton;
 			const buttonUserData = controls.ui.hourglassButton.userData;
 			if (buttonUserData instanceof ButtonUserData) {
 				buttonUserData.registerHitCallback(() => {
@@ -449,19 +408,6 @@ export default class Testb2World {
 			});
 		});
 
-		// const cm = b2World.GetContactManager();
-		// let contacts = cm.m_contactList;
-		// while (contacts) {
-		// 	if (contacts.IsTouching()) {
-		// 		fixtureVertsCount += (__contactMarkerSegs + 3) * 2;
-		// 	}
-		// 	contacts = contacts.m_next;
-		// }
-
-		// 1.3 meters tall
-		// 0.35 meters wide
-		// 0.6 meters thick base
-
 		function getFirstTouch(touchEvent: TouchEvent) {
 			return touchEvent.touches.item(0)!;
 		}
@@ -486,16 +432,10 @@ export default class Testb2World {
 				const clickedb2Space: Vec2 = this.rayCastConverter!(x, y);
 
 				if (this.interactive) {
-					this.selectedBody = queryForSingleArchitectureBody(b2World, clickedb2Space);
+					const body = queryForSingleArchitectureBody(b2World, clickedb2Space);
 
-					if (this.selectedBody) {
-						const selectedDelta = clickedb2Space.Clone().SelfSub(this.selectedBody.GetPosition());
-						this.selectedBodyOffset = selectedDelta;
-						this.lastSelectedBody = this.selectedBody;
-					} else if (!this.selectedBody && this.lastSelectedBody) {
-						this.lastSelectedBodyAngle = this.lastSelectedBody.GetAngle();
-						this.initialRotationHandlePosition = clickedb2Space;
-						this.isTurningBody = true;
+					if (body) {
+						this.attachCursorJoint(clickedb2Space, body);
 					}
 				}
 
@@ -553,13 +493,7 @@ export default class Testb2World {
 			onCursorStop();
 		};
 		const onCursorStop = () => {
-			this.selectedBody = undefined;
-			this.initialRotationHandlePosition = undefined;
-			this.isTurningBody = false;
-
-			if (this.lastSelectedBody) {
-				this.lastSelectedBody.SetAngularVelocity(0);
-			}
+			this.detachCursorJoint();
 		};
 
 		const onDebugMouseMove = (mouseMove: MouseEvent) => {
@@ -573,9 +507,11 @@ export default class Testb2World {
 
 		const onCursorMove = (x: number, y: number) => {
 			this.cursorPosition = this.rayCastConverter!(x, y);
-			if (this.selectedBody) {
-				this.selectedBody.SetLinearVelocity(new Vec2(0.0001, 0));
-				// hacky way of getting the currently dragged about piece to interact with other pieces
+			if (this.playerCursorBody) {
+				this.playerCursorBody.SetPosition(this.cursorPosition);
+				if (this.cursorJoint) {
+					this.cursorJoint.SetTarget(this.cursorPosition);
+				}
 			}
 		};
 
@@ -644,6 +580,26 @@ export default class Testb2World {
 		}
 		renderer.render(this.scene, this.camera);
 		this.gui.render(renderer);
+	}
+
+	private detachCursorJoint() {
+		if (this.cursorJoint) {
+			this.b2World.DestroyJoint(this.cursorJoint);
+			this.cursorJoint = undefined;
+		}
+	}
+
+	private attachCursorJoint(clickedb2Space: Vec2, body: Body) {
+		const frequencyHz = 5.0;
+		const dampingRatio = 0.7;
+		const jointDef: MouseJointDef = new MouseJointDef();
+		jointDef.bodyA = this.playerCursorBody;
+		jointDef.bodyB = body;
+		jointDef.target.Copy(clickedb2Space);
+		jointDef.maxForce = 20 * body.GetMass();
+		LinearStiffness(jointDef, frequencyHz, dampingRatio, jointDef.bodyA, jointDef.bodyB);
+		this.cursorJoint = this.b2World.CreateJoint(jointDef);
+		body.SetAwake(true);
 	}
 
 	private colorizeHourglassButton(color: Color) {
