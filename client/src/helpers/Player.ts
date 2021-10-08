@@ -8,4 +8,5 @@ export default class Player {
 
 	currentTimer: number = __INITIAL_LEVEL_DURATION;
 	maxTimer: number = __INITIAL_LEVEL_DURATION;
+	physicsTime: number = 0;
 }

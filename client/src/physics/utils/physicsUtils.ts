@@ -158,6 +158,7 @@ export function createDynamicBox(
 }
 
 export interface ArchitectParams {
+	floating: boolean;
 	x: number;
 	y: number;
 	angle: number;
@@ -182,6 +183,9 @@ export function isArchitectParams(params: any): params is ArchitectParams {
 		return false;
 	}
 	if (typeof params.angle !== "number") {
+		return false;
+	}
+	if (typeof params.floating !== "boolean") {
 		return false;
 	}
 	if (typeof params.meshName !== "string") {

@@ -44,17 +44,17 @@ export default class TestGraphics3D extends TestLightingScene {
 
 				return vec;
 			},
-			() => {
+			level => {
 				simpleTweener.to({
 					target: this.camera.position,
-					propertyGoals: { y: this.camera.position.y + 1 },
+					propertyGoals: { y: level },
 					easing: Easing.Quartic.InOut,
 					duration: 2000
 				});
 				if (this.heightGoal) {
 					simpleTweener.to({
 						target: this.heightGoal.position,
-						propertyGoals: { y: this.heightGoal.position.y + 1 },
+						propertyGoals: { y: level - 0.25 },
 						easing: Easing.Quartic.InOut,
 						duration: 2000
 					});
@@ -62,37 +62,12 @@ export default class TestGraphics3D extends TestLightingScene {
 				if (this.dangerZone) {
 					simpleTweener.to({
 						target: this.dangerZone.position,
-						propertyGoals: { y: this.dangerZone.position.y + 1 },
+						propertyGoals: { y: level - 1.55 },
 						easing: Easing.Quartic.InOut,
 						duration: 2000
 					});
 				}
 			},
-			() => {
-				simpleTweener.to({
-					target: this.camera.position,
-					propertyGoals: { y: 0 },
-					easing: Easing.Quartic.InOut,
-					duration: 2000
-				});
-				if (this.heightGoal) {
-					simpleTweener.to({
-						target: this.heightGoal.position,
-						propertyGoals: { y: -0.25 },
-						easing: Easing.Quartic.InOut,
-						duration: 2000
-					});
-				}
-				if (this.dangerZone) {
-					simpleTweener.to({
-						target: this.dangerZone.position,
-						propertyGoals: { y: -1.55 },
-						easing: Easing.Quartic.InOut,
-						duration: 2000
-					});
-				}
-			},
-
 			body => {
 				if (this.currentSelectedPiece) {
 					this.currentSelectedPiece.material = this.currentSelectedPieceOriginalMaterial;

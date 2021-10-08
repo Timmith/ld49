@@ -1,32 +1,33 @@
 import { World } from "box2d";
 import Player from "~/helpers/Player";
+import { GameState, OnNewPieceCallback, WorldData } from "~/helpers/types";
 
-import { onDestructionQueueCleared, queueDestruction } from "../managers/destructionManager";
+import { onDestructionQueueCleared } from "../managers/destructionManager";
 
 import { ArchitectParams, createArchitectMeshAndFixtures, isArchitectParams } from "./physicsUtils";
 // import { Player } from "~/helpers/scenes/Testb2World";
 
-export interface WorldData {
-	player: Player;
-	bodies: ArchitectParams[];
-}
-
-export async function loadLevelData(player: Player, b2World: World, data: WorldData): Promise<void> {
-	const oldBodies = [];
-	for (let body = b2World.GetBodyList(); body; body = body.m_next) {
-		if (isArchitectParams(body.m_userData)) {
-			oldBodies.push(body);
-		}
-	}
-	oldBodies.forEach(queueDestruction);
+export async function loadLevelData(player: Player, data: WorldData, onNewPiece: OnNewPieceCallback): Promise<void> {
 	await new Promise<void>(resolve => onDestructionQueueCleared(resolve));
 
-	await Promise.all(data.bodies.map(createArchitectMeshAndFixtures));
+	await Promise.all(
+		data.bodies.map(b => {
+			const p = createArchitectMeshAndFixtures(b);
+			p.then(v => onNewPiece(v));
+			return p;
+		})
+	);
+
+	player.currentHealth = data.player.currentHealth;
+	player.currentLevel = data.player.currentLevel;
+	player.currentTimer = data.player.currentTimer;
+	player.maxHealth = data.player.maxHealth;
+	player.maxTimer = data.player.maxTimer;
+	player.physicsTime = data.player.physicsTime;
 }
 
-export function serializeWorld(player: Player, b2World: World): WorldData {
+export function serializeWorld(gameState: GameState, player: Player, b2World: World): WorldData {
 	const bodies: ArchitectParams[] = [];
-	const data: WorldData = { player, bodies };
 
 	for (let body = b2World.GetBodyList(); body; body = body.m_next) {
 		if (isArchitectParams(body.m_userData)) {
@@ -34,26 +35,29 @@ export function serializeWorld(player: Player, b2World: World): WorldData {
 			bodies.push({ ...body.m_userData, x, y, angle: body.GetAngle() });
 		}
 	}
-	return data;
+	return { gameState, player, bodies };
 }
 
-export function saveLevelBeforeUnload(player: Player, b2World: World) {
+export function saveLevelBeforeUnload(gameState: GameState, player: Player, b2World: World) {
 	window.onbeforeunload = () => {
-		saveLevelDataToLocalStorage(player, b2World);
+		saveLevelDataToLocalStorage(gameState, player, b2World);
 	};
 }
 
-export function saveLevelDataToLocalStorage(player: Player, b2World: World) {
-	const dataString = JSON.stringify(serializeWorld(player, b2World));
+export function saveLevelDataToLocalStorage(gameState: GameState, player: Player, b2World: World) {
+	const dataString = JSON.stringify(serializeWorld(gameState, player, b2World));
 	console.log(`saved ${dataString.length * 2} bytes of data`);
 	localStorage.setItem("level", dataString);
 }
 
-export function loadLevelDataFromLocalStorage(player: Player, b2World: World) {
+export async function loadLevelDataFromLocalStorage(player: Player, onNewPiece: OnNewPieceCallback) {
 	const dataString = localStorage.getItem("level");
 	if (dataString) {
-		loadLevelData(player, b2World, JSON.parse(dataString));
+		const data = JSON.parse(dataString) as WorldData;
+		await loadLevelData(player, data, onNewPiece);
+		return data;
 	} else {
 		console.warn("no level data in localStorage");
+		return undefined;
 	}
 }
