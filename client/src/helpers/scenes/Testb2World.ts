@@ -49,7 +49,7 @@ let isKeyXDown: boolean = false;
 let isKeyCDown: boolean = false;
 let isKeyVDown: boolean = false;
 
-const emptyUpdate = (dt: number) => {}
+const emptyUpdate = (dt: number) => {};
 
 export type GameState =
 	| "uninitialized"
@@ -70,7 +70,7 @@ export default class Testb2World {
 			this._state = value;
 			switch (value) {
 				case "waitingForInput":
-					this.noInteract = false;
+					this.interactive = true;
 					break;
 				case "gameOver":
 					this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
@@ -122,7 +122,7 @@ export default class Testb2World {
 					}, 2);
 					break;
 				case "settling":
-					this.noInteract = true;
+					this.interactive = false;
 					this.selectedBody = undefined;
 					this.lastSelectedBody = undefined;
 					this.turnGravityOn(this.b2World, this.applyCurrentAtmosphericDamping);
@@ -335,7 +335,7 @@ export default class Testb2World {
 	];
 	currentLevelWinCondition: boolean | undefined;
 	readyForLevelStart: boolean = true;
-	noInteract: boolean;
+	interactive: boolean;
 
 	protected scene: Scene;
 	protected camera: Camera;
@@ -482,7 +482,7 @@ export default class Testb2World {
 				this.cursorPosition = this.rayCastConverter!(x, y);
 				const clickedb2Space: Vec2 = this.rayCastConverter!(x, y);
 
-				if (!this.noInteract) {
+				if (this.interactive) {
 					this.selectedBody = queryForSingleArchitectureBody(b2World, clickedb2Space);
 
 					if (this.selectedBody) {
