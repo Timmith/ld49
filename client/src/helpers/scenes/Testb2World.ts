@@ -123,8 +123,6 @@ export default class Testb2World {
 					break;
 				case "settling":
 					this.interactive = false;
-					this.selectedBody = undefined;
-					this.lastSelectedBody = undefined;
 					this.turnGravityOn(this.b2World, this.applyCurrentAtmosphericDamping);
 					this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
 					taskTimer.add(() => {
@@ -208,6 +206,16 @@ export default class Testb2World {
 		this._lastSelectedBody = value;
 		if (this.pieceSelectedCallback) {
 			this.pieceSelectedCallback(value);
+		}
+	}
+	get interactive(): boolean {
+		return this._interactive;
+	}
+	set interactive(value: boolean) {
+		this._interactive = value;
+		if (!value) {
+			this.selectedBody = undefined;
+			this.lastSelectedBody = undefined;
 		}
 	}
 	lastSelectedBodyAngle: number;
@@ -335,12 +343,12 @@ export default class Testb2World {
 	];
 	currentLevelWinCondition: boolean | undefined;
 	readyForLevelStart: boolean = true;
-	interactive: boolean;
 
 	protected scene: Scene;
 	protected camera: Camera;
 	protected bgColor: Color;
 	protected b2Preview: Box2DPreviewMesh;
+	private _interactive: boolean;
 	private _lastSelectedBody: Body | undefined;
 
 	private _state: GameState = "uninitialized";
@@ -488,9 +496,6 @@ export default class Testb2World {
 					if (this.selectedBody) {
 						const selectedDelta = clickedb2Space.Clone().SelfSub(this.selectedBody.GetPosition());
 						this.selectedBodyOffset = selectedDelta;
-					}
-
-					if (this.selectedBody) {
 						this.lastSelectedBody = this.selectedBody;
 					} else if (!this.selectedBody && this.lastSelectedBody) {
 						this.lastSelectedBodyAngle = this.lastSelectedBody.GetAngle();
