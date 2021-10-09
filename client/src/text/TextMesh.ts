@@ -11,6 +11,7 @@ import {
 	PlaneBufferGeometry,
 	RawShaderMaterial,
 	Scene,
+	ShaderMaterial,
 	Texture,
 	Uniform,
 	Vector2,
@@ -342,7 +343,7 @@ const initMaterial = (settings: TextSettings) => {
 	}
 
 	const hardText = settings.alphaTest > 0 && settings.alphaTest < 1 && !settings.shadow;
-	const material = new RawShaderMaterial({
+	const material = new ShaderMaterial({
 		defines: {
 			USE_STROKE: settings.strokeWidth > 0,
 			USE_ALPHATEST: hardText,
@@ -354,11 +355,9 @@ const initMaterial = (settings: TextSettings) => {
 		vertexShader,
 		fragmentShader,
 		transparent: true,
-		depthWrite: hardText,
-		extensions: {
-			derivatives: true
-		}
+		depthWrite: hardText
 	});
+	material.extensions.derivatives = true;
 
 	Object.defineProperty(material, "opacity", {
 		get: () => material.uniforms.opacity.value,

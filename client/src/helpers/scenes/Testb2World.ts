@@ -1,4 +1,14 @@
-import { Body, kinematicBody, LinearStiffness, MouseJoint, MouseJointDef, Vec2, World } from "box2d";
+import {
+	Body,
+	kinematicBody,
+	LinearStiffness,
+	MouseJoint,
+	MouseJointDef,
+	PolygonShape,
+	Transform,
+	Vec2,
+	World
+} from "box2d";
 import {
 	BufferGeometry,
 	Camera,
@@ -31,8 +41,9 @@ import {
 	queryForSingleArchitectureBody
 } from "~/physics/utils/physicsUtils";
 import { loadLevelDataFromLocalStorage, saveLevelDataToLocalStorage } from "~/physics/utils/serialUtils";
-import { __INITIAL_LEVEL_DURATION, __LEVEL_DURATION_INCREMENT } from "~/settings/constants";
+import { __INITIAL_LEVEL_DURATION, __LEVEL_DURATION_INCREMENT, __PHYSICAL_SCALE_METERS } from "~/settings/constants";
 import SimpleGUIOverlay, { ButtonUserData } from "~/ui/SimpleGUIOverlay";
+import { removeFromArray } from "~/utils/arrayUtils";
 import { COLOR_HOURGLASS_AVAILABLE, COLOR_HOURGLASS_UNAVAILABLE } from "~/utils/colorLibrary";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
 import { getUrlColor, getUrlFlag } from "~/utils/location";
@@ -55,6 +66,9 @@ let isKeyVDown: boolean = false;
 const emptyUpdate = (dt: number) => {};
 const FIXED_PHYSICS_DT = 1 / 120;
 
+const tempVec2 = new Vec2();
+const heightOffset = 0.9;
+
 export default class Testb2World {
 	get state(): GameState {
 		return this._state;
@@ -72,6 +86,8 @@ export default class Testb2World {
 					break;
 				case "gameOver":
 					this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
+					this.player.currentHeight = 0;
+
 					console.log("Sorry, you lost!");
 
 					this.failedPieces.length = 0;
@@ -179,7 +195,7 @@ export default class Testb2World {
 
 		playing: (dt: number) => {
 			this.player.currentTimer -= dt;
-
+			this.updateHeightMeasurement();
 			// Responsible for level end & checking, settling, gameOver
 			if (this.player.currentTimer < 0) {
 				this.player.currentTimer = 0;
@@ -189,7 +205,9 @@ export default class Testb2World {
 			}
 		},
 
-		settling: emptyUpdate,
+		settling: () => {
+			this.updateHeightMeasurement();
+		},
 
 		checking: emptyUpdate,
 
@@ -283,6 +301,8 @@ export default class Testb2World {
 				this.failedPieces.push(body);
 				this.player.currentHealth = Math.max(0, this.player.currentHealth + healthDelta);
 			}
+			queueDestruction(body);
+			removeFromArray(this.activeArchitectureBodies, body);
 		});
 		mcl.register(bcl);
 		this.b2World.SetContactListener(mcl);
@@ -475,6 +495,30 @@ export default class Testb2World {
 		});
 		this.state = "waitingForInput";
 	} //+++++++++++++++++++++++++++END OF CONSTRUCTOR CURLY BRACKET++++++++++++++++++++++++++++++++//
+	updateHeightMeasurement() {
+		const topThree = this.activeArchitectureBodies
+			.sort((a, b) => b.GetPosition().y - a.GetPosition().y)
+			.slice(0, Math.min(3, this.activeArchitectureBodies.length));
+		const height =
+			topThree.reduce<number>((tallestHeight, body) => {
+				let currentHeight = -Infinity;
+				let fixt = body.GetFixtureList();
+				const t = body.GetTransform();
+				while (fixt) {
+					const shape = fixt.GetShape();
+					if (shape instanceof PolygonShape) {
+						for (const v of shape.m_vertices) {
+							Transform.MulXV(t, v, tempVec2);
+							currentHeight = Math.max(currentHeight, tempVec2.y);
+						}
+					}
+					fixt = fixt.m_next;
+				}
+				return Math.max(tallestHeight, currentHeight);
+			}, -Infinity) + heightOffset;
+		this.player.currentHeight = height;
+		// console.log((height * __PHYSICAL_SCALE_METERS).toFixed(2));
+	}
 	delayedGameEvent(cb: () => void, delay: number) {
 		this.timedTasks.push(taskTimer.add(cb, delay));
 	}

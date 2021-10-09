@@ -16,16 +16,15 @@ import {
 import device from "~/device";
 import Player from "~/helpers/Player";
 import { canvas } from "~/renderer";
-import TextMesh from "~/text/TextMesh";
 import { removeFromArray } from "~/utils/arrayUtils";
 
 export default class SimpleGUIOverlay {
-	_relativeWidthButtonSpacing: number;
-	_relativeHeightButtonSpacing: number;
-	_narrowerWindowDimension: number = window.innerWidth < window.innerHeight ? window.innerWidth : window.innerHeight;
-	_squareButtonDimensions: number = 2.0;
+	relativeButtonSpacingWidth: number;
+	relativeButtonSpacingHeight: number;
+	narrowerWindowDimension: number = window.innerWidth < window.innerHeight ? window.innerWidth : window.innerHeight;
+	squareButtonDimensions: number = 2.0;
 
-	private _scene = new Scene();
+	scene = new Scene();
 	private _camera = new OrthographicCamera(0, window.innerWidth, 0, window.innerHeight, -100, 100);
 	private _fixedRadius: number = 33.3; // <-- good sizing for thumbs (the analogs) on the screen
 	private _uiMeshes: Mesh[] = [];
@@ -48,36 +47,25 @@ export default class SimpleGUIOverlay {
 	private _hourglassTextureLoading: Promise<Texture> | undefined;
 
 	constructor() {
-		this._scene.add(this._camera);
-
-		if (device.orientation === "landscape" && device.isMobile) {
-			this._relativeWidthButtonSpacing = window.innerWidth / 18;
-			this._relativeHeightButtonSpacing = window.innerHeight / 8;
-		} else if (device.orientation === "portrait" && device.isMobile) {
-			this._relativeHeightButtonSpacing = window.innerHeight / 18;
-			this._relativeWidthButtonSpacing = window.innerWidth / 10;
-		} else {
-			this._relativeWidthButtonSpacing = window.innerWidth / 18;
-			this._relativeHeightButtonSpacing = window.innerHeight / 8;
-		}
+		this.scene.add(this._camera);
 
 		device.onChange(() => {
 			this._camera.right = window.innerWidth;
 			this._camera.bottom = window.innerHeight;
 			this._camera.updateProjectionMatrix();
 
-			this._narrowerWindowDimension =
+			this.narrowerWindowDimension =
 				window.innerWidth < window.innerHeight ? window.innerWidth : window.innerHeight;
 
 			if (device.orientation === "landscape" && device.isMobile) {
-				this._relativeWidthButtonSpacing = window.innerWidth / 18;
-				this._relativeHeightButtonSpacing = window.innerHeight / 8;
+				this.relativeButtonSpacingWidth = window.innerWidth / 18;
+				this.relativeButtonSpacingHeight = window.innerHeight / 8;
 			} else if (device.orientation === "portrait" && device.isMobile) {
-				this._relativeHeightButtonSpacing = window.innerHeight / 18;
-				this._relativeWidthButtonSpacing = window.innerWidth / 10;
+				this.relativeButtonSpacingHeight = window.innerHeight / 18;
+				this.relativeButtonSpacingWidth = window.innerWidth / 10;
 			} else {
-				this._relativeWidthButtonSpacing = window.innerWidth / 18;
-				this._relativeHeightButtonSpacing = window.innerHeight / 8;
+				this.relativeButtonSpacingWidth = window.innerWidth / 18;
+				this.relativeButtonSpacingHeight = window.innerHeight / 8;
 			}
 		}, true);
 	}
@@ -99,13 +87,13 @@ export default class SimpleGUIOverlay {
 	}
 
 	removeUI(mesh: Mesh) {
-		this._scene.remove(mesh);
+		this.scene.remove(mesh);
 		removeFromArray(this._uiMeshes, mesh);
 		return mesh;
 	}
 
 	removeButtonUI(mesh: Mesh) {
-		this._scene.remove(mesh);
+		this.scene.remove(mesh);
 		removeFromArray(this._uiButtonMeshes, mesh);
 		return mesh;
 	}
@@ -119,7 +107,7 @@ export default class SimpleGUIOverlay {
 
 		// console.log(`window.innerWidth: ${window.innerWidth}, innerHeight ${window.innerHeight}`);
 
-		renderer.render(this._scene, this._camera);
+		renderer.render(this.scene, this._camera);
 	}
 
 	async makeHourglassIcon(x: number, y: number, player: Player) {
@@ -127,8 +115,8 @@ export default class SimpleGUIOverlay {
 
 		const imageAspectRatio = hourglassTexture.image.width / hourglassTexture.image.height;
 		const geo = new PlaneBufferGeometry(
-			this._squareButtonDimensions * imageAspectRatio,
-			this._squareButtonDimensions
+			this.squareButtonDimensions * imageAspectRatio,
+			this.squareButtonDimensions
 		);
 		const mesh = this._makeUI(geo, x, y, true, undefined);
 		mesh.material = new MeshBasicMaterial({ map: hourglassTexture, transparent: true });
@@ -142,10 +130,7 @@ export default class SimpleGUIOverlay {
 		const fullscreenEnterTexture = await this.getFullscreenEnterTexture();
 		const fullscreenExitTexture = await this.getFullscreenExitTexture();
 		const imageAspectRatio = fullscreenEnterTexture.image.width / fullscreenEnterTexture.image.height;
-		const geo = new BoxBufferGeometry(
-			this._squareButtonDimensions * imageAspectRatio,
-			this._squareButtonDimensions
-		);
+		const geo = new BoxBufferGeometry(this.squareButtonDimensions * imageAspectRatio, this.squareButtonDimensions);
 		const mesh = this._makeUI(geo, x, y, true, undefined);
 		mesh.material = new MeshBasicMaterial({ map: fullscreenEnterTexture, transparent: true });
 
@@ -167,10 +152,7 @@ export default class SimpleGUIOverlay {
 	async makeWhiteHeartIcon(x: number, y: number) {
 		const whiteHeartTexture = await this.getWhiteHeartTexture();
 		const imageAspectRatio = whiteHeartTexture.image.width / whiteHeartTexture.image.height;
-		const geo = new BoxBufferGeometry(
-			this._squareButtonDimensions * imageAspectRatio,
-			this._squareButtonDimensions
-		);
+		const geo = new BoxBufferGeometry(this.squareButtonDimensions * imageAspectRatio, this.squareButtonDimensions);
 		const mesh = this._makeUI(geo, x, y, undefined, undefined);
 		mesh.material = new MeshBasicMaterial({ map: whiteHeartTexture, transparent: true, depthWrite: false });
 		mesh.scale.setScalar(16);
@@ -178,16 +160,11 @@ export default class SimpleGUIOverlay {
 	}
 
 	makeTimerBar(x: number, y: number, isButton?: boolean, uniqueMaterial = true) {
-		const staminaBarMesh = this._makeUI(this.getTimerBarGeometry(), x, y, isButton, uniqueMaterial);
-		staminaBarMesh.material.color.set("white");
-		staminaBarMesh.material.opacity = 0.5;
+		const timerBar = this._makeUI(this.getTimerBarGeometry(), x, y, isButton, uniqueMaterial);
+		timerBar.material.color.set("white");
+		timerBar.material.opacity = 0.5;
 
-		const staminaText = new TextMesh("Time:");
-		staminaText.scale.multiplyScalar(100);
-		staminaText.opacity = 2;
-		staminaBarMesh.add(staminaText);
-
-		return staminaBarMesh;
+		return timerBar;
 	}
 
 	makeBiggerCircle(x: number, y: number) {
@@ -217,7 +194,7 @@ export default class SimpleGUIOverlay {
 		mesh.position.set(x, y, 0);
 		mesh.rotation.x = Math.PI;
 		mesh.scale.setScalar(this._fixedRadius);
-		this._scene.add(mesh);
+		this.scene.add(mesh);
 		if (isButton) {
 			this._uiButtonMeshes.push(mesh);
 		} else {
@@ -309,10 +286,7 @@ export default class SimpleGUIOverlay {
 	}
 	private getSmallSquareGeometry() {
 		if (!this._geometrySqaureSmall) {
-			this._geometrySqaureSmall = new BoxBufferGeometry(
-				this._squareButtonDimensions,
-				this._squareButtonDimensions
-			);
+			this._geometrySqaureSmall = new BoxBufferGeometry(this.squareButtonDimensions, this.squareButtonDimensions);
 		}
 		return this._geometrySqaureSmall;
 	}

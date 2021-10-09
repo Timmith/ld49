@@ -1,8 +1,6 @@
 import { Body, Contact, ContactListener, Fixture } from "box2d";
 import { translateCategoryBitsToString } from "~/physics/utils/physicsUtils";
 
-import { queueDestruction } from "../managers/destructionManager";
-
 export default class BaseContactListener extends ContactListener {
 	static readonly k_maxContactPoints: number = 2048;
 	private _healthChangeCallbacks: Array<(healthDelta: number, body: Body) => void> = [];
@@ -50,7 +48,6 @@ export default class BaseContactListener extends ContactListener {
 		for (const cb of this._healthChangeCallbacks) {
 			cb(-1, architectureBody);
 		}
-		queueDestruction(architectureBody);
 	}
 }
 

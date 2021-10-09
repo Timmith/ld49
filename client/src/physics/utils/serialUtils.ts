@@ -24,6 +24,7 @@ export async function loadLevelData(player: Player, data: WorldData, onNewPiece:
 	player.maxHealth = data.player.maxHealth;
 	player.maxTimer = data.player.maxTimer;
 	player.physicsTime = data.player.physicsTime;
+	player.currentHeight = data.player.currentHeight;
 }
 
 export function serializeWorld(gameState: GameState, player: Player, b2World: World): WorldData {

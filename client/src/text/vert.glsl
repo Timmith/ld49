@@ -1,5 +1,5 @@
-attribute vec2 uv;
-attribute vec4 position;
+// attribute vec2 uv;
+// attribute vec4 position;
 attribute vec3 color;
 attribute float weight;
 
@@ -9,8 +9,8 @@ uniform float prescale;
 uniform vec4 clipSpacePosition;
 uniform vec2 pixelSizeInClipSpace;
 #else
-uniform mat4 projectionMatrix;
-uniform mat4 modelViewMatrix;
+// uniform mat4 projectionMatrix;
+// uniform mat4 modelViewMatrix;
 #endif
 varying vec2 vUv;
 varying vec3 vColor;
@@ -29,6 +29,6 @@ void main() {
     gl_Position = clipSpacePosition;
     gl_Position.xy += finalOffset;
   #else
-    gl_Position = projectionMatrix * modelViewMatrix * position;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   #endif
 }

@@ -1,16 +1,22 @@
 // import { Body } from "box2d";
 import { BufferGeometry, Color, Mesh, MeshBasicMaterial } from "three";
 import Player from "~/helpers/Player";
+import { __PHYSICAL_SCALE_METERS } from "~/settings/constants";
 import TextMesh from "~/text/TextMesh";
+import { TextSettings, textSettings } from "~/text/TextSettings";
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 // import { removeFromArray } from "~/utils/arrayUtils";
 
 let gui: SimpleGUIOverlay | undefined;
-const playerHeartsMap = new Map<Player, Mesh[]>();
-const playerTimerBarMap = new Map<Player, Mesh>();
+let hearts: Array<Mesh<BufferGeometry, MeshBasicMaterial>> | undefined;
+let timerBar: Mesh | undefined;
+let labelBarTime: TextMesh | undefined;
+let textTimer: TextMesh | undefined;
+let textLevel: TextMesh | undefined;
+let textHeight: TextMesh | undefined;
 
-const playerButtonMap = new Map<Player, Mesh>();
-const playerHourglassMap = new Map<Player, Mesh>();
+let fullScreenButton: Mesh | undefined;
+let hourGlassButton: Mesh | undefined;
 
 const __heartSpacing: number = 40;
 
@@ -23,15 +29,15 @@ export async function registerHUD(player: Player, passedGUI: SimpleGUIOverlay) {
 	await initializeHealthHUD(player);
 	initializeLevelTimer(player);
 
-	await initializeFullscreenButton(player);
+	await initializeFullscreenButton();
 
 	const hourglassButton: Mesh<BufferGeometry, MeshBasicMaterial> = await gui!.makeHourglassIcon(
-		window.innerWidth - gui!._relativeWidthButtonSpacing,
-		window.innerHeight - gui!._relativeHeightButtonSpacing / 2,
+		window.innerWidth - gui!.relativeButtonSpacingWidth,
+		window.innerHeight - gui!.relativeButtonSpacingHeight / 2,
 		player
 	);
 
-	playerHourglassMap.set(player, hourglassButton);
+	hourGlassButton = hourglassButton;
 
 	return { hourglassButton };
 }
@@ -44,117 +50,114 @@ export function processHUD(dt: number, player: Player) {
 	// for (const player of HUDBodies) {
 
 	healthHUDupdate(player);
-	fullscreenButtonUpdate(player);
+	fullscreenButtonUpdate();
 
-	const offsetFromLeft = window.innerWidth / 3;
-	const timerBarMesh = playerTimerBarMap.get(player);
-	if (!timerBarMesh) {
-		return;
+	const timerRatio = player.currentTimer / player.maxTimer;
+	const middleWidth = window.innerWidth * 0.5;
+	const barWidth = window.innerWidth * 0.333;
+	const leftMargin = (window.innerWidth - barWidth) * 0.5;
+	if (timerBar) {
+		const size = timerRatio * barWidth;
+		timerBar.scale.x = size;
+		const barY = 60;
+		timerBar.position.set(barWidth + size * 0.5, barY, 0);
+
+		if (labelBarTime) {
+			labelBarTime.position.set(leftMargin - 6, barY, 0);
+		}
+		if (textTimer) {
+			textTimer.text = `${player.currentTimer.toFixed(2)}`;
+			textTimer.position.set(middleWidth, barY, 0);
+		}
+		if (textLevel) {
+			textLevel.text = `Level: ${player.currentLevel + 1}`;
+			textLevel.position.set(middleWidth, barY * 0.35, 0);
+		}
+		if (textHeight) {
+			textHeight.text = `${(player.currentHeight * __PHYSICAL_SCALE_METERS).toFixed(2)}m`;
+			textHeight.position.set(middleWidth, window.innerHeight - 30, 0);
+		}
 	}
-	const barLengthener = 4;
-	const timerRatio = (player.currentTimer / player.maxTimer) * barLengthener;
-	timerBarMesh.scale.x = timerRatio * 100;
-	timerBarMesh.position.set(
-		offsetFromLeft + timerBarMesh.scale.x / 2,
-		(gui!._relativeHeightButtonSpacing * 2) / 4,
-		0
-	);
-
-	timerBarMesh.children[0].scale.x = 4000 / timerBarMesh.scale.x;
-	const timeTextOffset = 1;
-	timerBarMesh.children[0].position.set(-1 + (timerRatio - timeTextOffset) / timerRatio / 2, 0.05, 0);
-
-	const timerInt = timerBarMesh.children[1] as TextMesh;
-	timerInt.scale.x = 4000 / timerBarMesh.scale.x;
-	timerInt.position.set(-1 + (timerRatio + timeTextOffset * barLengthener) / timerRatio / 2, 0.05, 0);
-	timerInt.text = `${player.currentTimer.toFixed(2)}`;
-
-	const levelLabel = timerBarMesh.children[2] as TextMesh;
-	levelLabel.scale.x = 4000 / timerBarMesh.scale.x;
-	levelLabel.position.set(-1 + (timerRatio + timeTextOffset * barLengthener) / timerRatio / 2, 0.05 + 1, 0);
-	levelLabel.text = `Level: ${player.currentLevel + 1}`;
-
-	const hourglassButton = playerHourglassMap.get(player);
-	if (!hourglassButton) {
-		return;
+	if (gui && hourGlassButton) {
+		hourGlassButton.position.set(
+			window.innerWidth - gui.relativeButtonSpacingWidth,
+			window.innerHeight - gui.relativeButtonSpacingHeight / 2,
+			0
+		);
 	}
-	hourglassButton.position.set(
-		window.innerWidth - gui!._relativeWidthButtonSpacing,
-		window.innerHeight - gui!._relativeHeightButtonSpacing / 2,
-		0
-	);
+}
+
+function makeText(text: string, settings: TextSettings = textSettings.ui) {
+	if (!gui) {
+		throw new Error("No gui initialized");
+	}
+	const textMesh = new TextMesh(text, settings);
+	textMesh.rotation.x = -Math.PI;
+	gui.scene.add(textMesh);
+	return textMesh;
 }
 
 function initializeLevelTimer(player: Player) {
-	const TimerBarMesh = gui!.makeTimerBar(0, 0);
-	playerTimerBarMap.set(player, TimerBarMesh);
+	if (!gui) {
+		throw new Error("No gui initialized");
+	}
+	timerBar = gui.makeTimerBar(0, 0);
 
-	const timerText = new TextMesh(`${player.currentTimer}`);
-	timerText.scale.multiplyScalar(100);
-	timerText.opacity = 2;
-	TimerBarMesh.add(timerText);
+	textTimer = makeText(`${player.currentTimer}`, textSettings.ui);
 
-	const levelText = new TextMesh(`Level: ${player.currentLevel + 1}`);
-	levelText.scale.multiplyScalar(100);
-	levelText.opacity = 2;
-	TimerBarMesh.add(levelText);
+	labelBarTime = makeText("Time:", { ...textSettings.ui, align: "right" });
+
+	textLevel = makeText(`Level: ${player.currentLevel + 1}`, textSettings.ui);
+
+	textHeight = makeText(`${player.currentHeight}m`, textSettings.height);
 }
 
 async function initializeHealthHUD(player: Player) {
-	const heartsArray: Mesh[] = [];
+	hearts = [];
 	for (let index = 0; index < player.maxHealth; index++) {
-		const heartIcon = await gui!.makeWhiteHeartIcon(
-			(gui!._narrowerWindowDimension / __heartSpacing) * 0.5 + (index + 1) * __heartSpacing,
+		const heart = await gui!.makeWhiteHeartIcon(
+			(gui!.narrowerWindowDimension / __heartSpacing) * 0.5 + (index + 1) * __heartSpacing,
 			__heartSpacing * 1.25
 		);
-		heartIcon.material.color.set(new Color(1.2, 0, 0));
-		heartsArray.push(heartIcon);
+		heart.material.color.set(new Color(1.2, 0, 0));
+		hearts.push(heart);
 	}
-	playerHeartsMap.set(player, heartsArray);
 }
 
 function healthHUDupdate(player: Player) {
-	const heartsArray = playerHeartsMap.get(player);
-	if (!heartsArray) {
+	if (!hearts) {
 		return;
 	}
-	let index = 0;
-	for (const heart of heartsArray) {
-		if (index >= player.currentHealth) {
+	for (let i = 0; i < hearts.length; i++) {
+		const heart = hearts[i];
+		if (i >= player.currentHealth) {
 			//@ts-ignore
 			heart.material.color.set(0xffffff);
 		} else {
-			//@ts-ignore
 			heart.material.color.set(new Color(1.2, 0, 0));
 		}
 		heart.position.set(
-			(gui!._narrowerWindowDimension / __heartSpacing) * 0.5 + (index + 1) * __heartSpacing,
+			(gui!.narrowerWindowDimension / __heartSpacing) * 0.5 + (i + 1) * __heartSpacing,
 			__heartSpacing * 1.25,
 			0
 		);
-		index++;
 	}
 }
 
-async function initializeFullscreenButton(player: Player) {
-	const fullscreenButton: Mesh = await gui!.makeFullscreenIcon(
-		gui!._relativeWidthButtonSpacing,
-		window.innerHeight - gui!._relativeHeightButtonSpacing / 2
+async function initializeFullscreenButton() {
+	fullScreenButton = await gui!.makeFullscreenIcon(
+		gui!.relativeButtonSpacingWidth,
+		window.innerHeight - gui!.relativeButtonSpacingHeight / 2
 	);
-
-	playerButtonMap.set(player, fullscreenButton);
-
-	return;
 }
 
-function fullscreenButtonUpdate(player: Player) {
-	const fullscreenButton = playerButtonMap.get(player);
-	if (!fullscreenButton) {
+function fullscreenButtonUpdate() {
+	if (!fullScreenButton) {
 		return;
 	}
-	fullscreenButton.position.set(
-		gui!._relativeWidthButtonSpacing,
-		window.innerHeight - gui!._relativeHeightButtonSpacing / 2,
+	fullScreenButton.position.set(
+		gui!.relativeButtonSpacingWidth,
+		window.innerHeight - gui!.relativeButtonSpacingHeight / 2,
 		0
 	);
 }

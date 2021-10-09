@@ -39,7 +39,7 @@ export default class TouchScreenController extends Controller {
 
 	constructor(ui: SimpleGUIOverlay) {
 		super(undefined);
-		this.buttonScaling = ui._squareButtonDimensions * 15;
+		this.buttonScaling = ui.squareButtonDimensions * 15;
 
 		// TODO
 		// make a onSizeChange or within the renderer of the UI,
@@ -53,8 +53,8 @@ export default class TouchScreenController extends Controller {
 		// ui._relativeButtonSpacing
 
 		this.buildModeButton = ui.makeSmallSquare(
-			window.innerWidth - ui._relativeWidthButtonSpacing,
-			ui._relativeHeightButtonSpacing,
+			window.innerWidth - ui.relativeButtonSpacingWidth,
+			ui.relativeButtonSpacingHeight,
 			true,
 			true
 		);
@@ -66,8 +66,8 @@ export default class TouchScreenController extends Controller {
 		});
 
 		this.secondtestButton = ui.makeSmallSquare(
-			window.innerWidth - ui._relativeWidthButtonSpacing - ui._relativeWidthButtonSpacing * 2,
-			ui._relativeHeightButtonSpacing,
+			window.innerWidth - ui.relativeButtonSpacingWidth - ui.relativeButtonSpacingWidth * 2,
+			ui.relativeButtonSpacingHeight,
 			true,
 			true
 		);

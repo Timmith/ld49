@@ -55,11 +55,26 @@ const title: TextSettings = {
 	strokeColor: 0x2c3a49,
 	fontFace: fontFaces.GothicA1ExtraBold
 };
+const ui: TextSettings = {
+	...generic,
+	fontFace: fontFaces.GothicA1Bold,
+	scaleDownToPhysicalSize: false
+};
+const bold: TextSettings = {
+	...ui,
+	fontFace: fontFaces.GothicA1ExtraBold
+};
+const height: TextSettings = {
+	...bold,
+	strokeColor: COLOR_BLACK,
+	strokeBias: 1,
+	strokeWidth: 0.5
+};
 const keyLabel: TextSettings = {
 	...generic,
 	lineHeight: 1.175,
 	size: 24,
-	color: COLOR_BLACK,
+	color: COLOR_WHITE,
 	fontFace: fontFaces.GothicA1Regular
 };
 const keyLabelDouble: TextSettings = {
@@ -84,6 +99,9 @@ const code: TextSettings = {
 
 export const textSettings = {
 	generic,
+	ui,
+	bold,
+	height,
 	title,
 	keyLabel,
 	keyLabelDouble,

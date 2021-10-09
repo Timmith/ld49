@@ -39,15 +39,17 @@ const float contrastMultiplier = 80.0;
 void main() {
   vec3 color = vColor;
 
-  vec3 sample = texture2D(msdf, vUv + vec2(0.0, -0.5/512.0)).rgb;
-  float unsignedDistance = median(sample.r, sample.g, sample.b);
+  vec3 texel = texture2D(msdf, vUv + vec2(0.0, -0.5/512.0)).rgb;
+  float unsignedDistance = median(texel.r, texel.g, texel.b);
 
   float signedDistance = unsignedDistance - (1.0 - 0.5 * vWeight);
 
   if ( unsignedDistance == 0.0 ) discard;
-  float contrast = contrastMultiplier;
+  // float contrast = contrastMultiplier;
   
-  //float contrast = (abs(dFdx(vUv.x)) + abs(dFdy(vUv.y))) * contrastMultiplier;
+  float derX = dFdx(vUv.x);
+  float derY = dFdy(vUv.y);
+  float contrast = sqrt(derX * derX + derY * derY) * contrastMultiplier;
 
   #ifdef USE_STROKE
     float distanceOpacity = signedDistance + (strokeWidth * strokeBias);
