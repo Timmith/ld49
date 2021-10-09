@@ -41,8 +41,9 @@ import {
 	queryForSingleArchitectureBody
 } from "~/physics/utils/physicsUtils";
 import { loadLevelDataFromLocalStorage, saveLevelDataToLocalStorage } from "~/physics/utils/serialUtils";
+import { canvas } from "~/renderer";
 import { __INITIAL_LEVEL_DURATION, __LEVEL_DURATION_INCREMENT, __PHYSICAL_SCALE_METERS } from "~/settings/constants";
-import SimpleGUIOverlay, { ButtonUserData } from "~/ui/SimpleGUIOverlay";
+import SimpleGUIOverlay, { ButtonUserData, ToggleButtonUserData } from "~/ui/SimpleGUIOverlay";
 import { removeFromArray } from "~/utils/arrayUtils";
 import { COLOR_HOURGLASS_AVAILABLE, COLOR_HOURGLASS_UNAVAILABLE } from "~/utils/colorLibrary";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
@@ -336,12 +337,23 @@ export default class Testb2World {
 				kinematicBody
 			);
 
-			this.hourglassButton = controls.ui.hourglassButton;
-			const buttonUserData = controls.ui.hourglassButton.userData;
-			if (buttonUserData instanceof ButtonUserData) {
-				buttonUserData.registerHitCallback(() => {
+			this.hourglassButton = controls.ui.hourGlassButton;
+			const hourglassButtonUserData = this.hourglassButton.userData;
+			if (hourglassButtonUserData instanceof ButtonUserData) {
+				hourglassButtonUserData.registerHitCallback(() => {
 					if (this.state === "playing") {
 						this.player.currentTimer = 0;
+					}
+				});
+			}
+			const fullScreenButton = controls.ui.fullScreenButton;
+			const fullScreenButtonUserData = fullScreenButton.userData;
+			if (fullScreenButtonUserData instanceof ToggleButtonUserData) {
+				fullScreenButtonUserData.registerHitCallback(enabled => {
+					if (enabled) {
+						canvas.requestFullscreen();
+					} else {
+						document.exitFullscreen();
 					}
 				});
 			}

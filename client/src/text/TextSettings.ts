@@ -68,7 +68,7 @@ const height: TextSettings = {
 	...bold,
 	strokeColor: COLOR_BLACK,
 	strokeBias: 1,
-	strokeWidth: 0.5
+	strokeWidth: 0.45
 };
 const keyLabel: TextSettings = {
 	...generic,

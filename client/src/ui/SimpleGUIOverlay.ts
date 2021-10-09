@@ -3,19 +3,14 @@ import {
 	CircleBufferGeometry,
 	Mesh,
 	MeshBasicMaterial,
-	NearestFilter,
 	OrthographicCamera,
 	PlaneBufferGeometry,
 	Raycaster,
 	Scene,
-	Texture,
-	TextureLoader,
 	Vector3,
 	WebGLRenderer
 } from "three";
 import device from "~/device";
-import Player from "~/helpers/Player";
-import { canvas } from "~/renderer";
 import { removeFromArray } from "~/utils/arrayUtils";
 
 export default class SimpleGUIOverlay {
@@ -38,13 +33,6 @@ export default class SimpleGUIOverlay {
 	private _geometrySmall: CircleBufferGeometry;
 	private _geometrySqaureSmall: BoxBufferGeometry;
 	private _geometryTimerBar: BoxBufferGeometry;
-
-	private _imageLoader: TextureLoader = new TextureLoader();
-	/* Texture Promises */
-	private _fullscreenEnterTextureLoading: Promise<Texture> | undefined;
-	private _fullscreenExitTextureLoading: Promise<Texture> | undefined;
-	private _whiteHeartTextureLoading: Promise<Texture> | undefined;
-	private _hourglassTextureLoading: Promise<Texture> | undefined;
 
 	constructor() {
 		this.scene.add(this._camera);
@@ -110,55 +98,6 @@ export default class SimpleGUIOverlay {
 		renderer.render(this.scene, this._camera);
 	}
 
-	async makeHourglassIcon(x: number, y: number, player: Player) {
-		const hourglassTexture = await this.getHourglassTexture();
-
-		const imageAspectRatio = hourglassTexture.image.width / hourglassTexture.image.height;
-		const geo = new PlaneBufferGeometry(
-			this.squareButtonDimensions * imageAspectRatio,
-			this.squareButtonDimensions
-		);
-		const mesh = this._makeUI(geo, x, y, true, undefined);
-		mesh.material = new MeshBasicMaterial({ map: hourglassTexture, transparent: true });
-
-		mesh.userData = new ButtonUserData();
-
-		return mesh;
-	}
-
-	async makeFullscreenIcon(x: number, y: number) {
-		const fullscreenEnterTexture = await this.getFullscreenEnterTexture();
-		const fullscreenExitTexture = await this.getFullscreenExitTexture();
-		const imageAspectRatio = fullscreenEnterTexture.image.width / fullscreenEnterTexture.image.height;
-		const geo = new BoxBufferGeometry(this.squareButtonDimensions * imageAspectRatio, this.squareButtonDimensions);
-		const mesh = this._makeUI(geo, x, y, true, undefined);
-		mesh.material = new MeshBasicMaterial({ map: fullscreenEnterTexture, transparent: true });
-
-		mesh.userData = new ToggleButtonUserData(enabled => {
-			if (enabled) {
-				canvas.requestFullscreen();
-				mesh.material = new MeshBasicMaterial({ map: fullscreenExitTexture, transparent: true });
-				// mesh.material.opacity = 0.75;
-			} else {
-				document.exitFullscreen();
-				mesh.material = new MeshBasicMaterial({ map: fullscreenEnterTexture, transparent: true });
-				// mesh.material.opacity = 0.3;
-			}
-		});
-
-		return mesh;
-	}
-
-	async makeWhiteHeartIcon(x: number, y: number) {
-		const whiteHeartTexture = await this.getWhiteHeartTexture();
-		const imageAspectRatio = whiteHeartTexture.image.width / whiteHeartTexture.image.height;
-		const geo = new BoxBufferGeometry(this.squareButtonDimensions * imageAspectRatio, this.squareButtonDimensions);
-		const mesh = this._makeUI(geo, x, y, undefined, undefined);
-		mesh.material = new MeshBasicMaterial({ map: whiteHeartTexture, transparent: true, depthWrite: false });
-		mesh.scale.setScalar(16);
-		return mesh;
-	}
-
 	makeTimerBar(x: number, y: number, isButton?: boolean, uniqueMaterial = true) {
 		const timerBar = this._makeUI(this.getTimerBarGeometry(), x, y, isButton, uniqueMaterial);
 		timerBar.material.color.set("white");
@@ -181,6 +120,10 @@ export default class SimpleGUIOverlay {
 	}
 	makeSmallSquare(x: number, y: number, isButton?: boolean, uniqueMaterial = false) {
 		return this._makeUI(this.getSmallSquareGeometry(), x, y, isButton, uniqueMaterial);
+	}
+
+	registerButton(mesh: Mesh) {
+		this._uiButtonMeshes.push(mesh);
 	}
 
 	private _makeUI(
@@ -214,50 +157,6 @@ export default class SimpleGUIOverlay {
 			return this._material.clone() as MeshBasicMaterial;
 		}
 		return this._material;
-	}
-
-	private getHourglassTexture() {
-		if (!this._hourglassTextureLoading) {
-			this._hourglassTextureLoading = this._imageLoader.loadAsync("game/icons/hourglass-button.png");
-			this._hourglassTextureLoading.then(tex => {
-				tex.minFilter = NearestFilter;
-				tex.magFilter = NearestFilter;
-			});
-		}
-		return this._hourglassTextureLoading;
-	}
-
-	private getFullscreenEnterTexture() {
-		if (!this._fullscreenEnterTextureLoading) {
-			this._fullscreenEnterTextureLoading = this._imageLoader.loadAsync("game/icons/fullscreen-enter.png");
-			this._fullscreenEnterTextureLoading.then(tex => {
-				tex.minFilter = NearestFilter;
-				tex.magFilter = NearestFilter;
-			});
-		}
-		return this._fullscreenEnterTextureLoading;
-	}
-
-	private getFullscreenExitTexture() {
-		if (!this._fullscreenExitTextureLoading) {
-			this._fullscreenExitTextureLoading = this._imageLoader.loadAsync("game/icons/fullscreen-exit.png");
-			this._fullscreenExitTextureLoading.then(tex => {
-				tex.minFilter = NearestFilter;
-				tex.magFilter = NearestFilter;
-			});
-		}
-		return this._fullscreenExitTextureLoading;
-	}
-
-	private getWhiteHeartTexture() {
-		if (!this._whiteHeartTextureLoading) {
-			this._whiteHeartTextureLoading = this._imageLoader.loadAsync("game/icons/heart-white.png");
-			this._whiteHeartTextureLoading.then(tex => {
-				tex.minFilter = NearestFilter;
-				tex.magFilter = NearestFilter;
-			});
-		}
-		return this._whiteHeartTextureLoading;
 	}
 
 	private getBiggerCircleGeometry() {
@@ -301,19 +200,22 @@ export default class SimpleGUIOverlay {
 
 export class ToggleButtonUserData {
 	enabled = false;
-
-	constructor(private callback: (enabled: boolean) => void) {}
+	private callbacks: Array<(enabled: boolean) => void> = [];
 
 	hit() {
 		this.enabled = !this.enabled;
-		this.callback(this.enabled);
+		for (const cb of this.callbacks) {
+			cb(this.enabled);
+		}
+	}
+
+	registerHitCallback(callback: (enabled: boolean) => void) {
+		this.callbacks.push(callback);
 	}
 }
 
 export class ButtonUserData {
 	private callbacks: Array<() => void> = [];
-
-	constructor() {}
 
 	hit() {
 		for (const cb of this.callbacks) {
