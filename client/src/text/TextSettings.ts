@@ -44,17 +44,6 @@ const generic: TextSettings = {
 	constantSizeOnScreen: false,
 	prescale: 1
 };
-const title: TextSettings = {
-	...generic,
-	...textLayouts.title,
-	lineHeight: 1.175,
-	size: 72,
-	color: 0xd2d0b8,
-	strokeWidth: 0.5,
-	strokeBias: 0.5,
-	strokeColor: 0x2c3a49,
-	fontFace: fontFaces.GothicA1ExtraBold
-};
 const ui: TextSettings = {
 	...generic,
 	fontFace: fontFaces.GothicA1Bold,
@@ -69,6 +58,17 @@ const height: TextSettings = {
 	strokeColor: COLOR_BLACK,
 	strokeBias: 1,
 	strokeWidth: 0.45
+};
+const title: TextSettings = {
+	...ui,
+	...textLayouts.title,
+	lineHeight: 1.175,
+	size: 72,
+	color: COLOR_BLACK,
+	strokeWidth: 0.5,
+	strokeBias: 0.5,
+	strokeColor: COLOR_WHITE,
+	fontFace: fontFaces.GothicA1ExtraBold
 };
 const keyLabel: TextSettings = {
 	...generic,

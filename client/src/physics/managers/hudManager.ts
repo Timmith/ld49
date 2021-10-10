@@ -31,13 +31,14 @@ function getSharedUiPlaneGeometry() {
 		return __sharedPlaneGeometry;
 	}
 }
-class HUD {
+export class HUD {
 	hearts: Array<Mesh<BufferGeometry, MeshBasicMaterial>>;
 	timerBar: Mesh;
 	labelBarTime: TextMesh;
 	textTimer: TextMesh;
 	textLevel: TextMesh;
 	textHeight: TextMesh;
+	labelAnnouncement: TextMesh;
 
 	fullScreenButton: Mesh<BufferGeometry, MeshBasicMaterial>;
 	hourGlassButton: Mesh<BufferGeometry, MeshBasicMaterial>;
@@ -83,6 +84,8 @@ class HUD {
 
 		this.textHeight = makeText(`${player.currentHeight}m`, textSettings.height);
 
+		this.labelAnnouncement = makeText("", textSettings.title);
+
 		this.fullScreenButton = new Mesh(
 			getSharedUiPlaneGeometry(),
 			new MeshBasicMaterial({ map: _fullscreenEnterButtonTexture, transparent: true })
@@ -105,6 +108,9 @@ class HUD {
 		this.hourGlassButton.userData = new ButtonUserData();
 		scene.add(this.hourGlassButton);
 		device.onChange(this.onResize, true);
+	}
+	announce(message: string) {
+		this.labelAnnouncement.text = message;
 	}
 	toggleFullscreenButton = (active: boolean) => {
 		this.fullScreenButton.material.map = active
@@ -143,6 +149,7 @@ class HUD {
 		this.textLevel.position.set(middleWidth, __barY * 0.35, 0);
 		this.textHeight.position.set(middleWidth, window.innerHeight - 30, 0);
 		this.hourGlassButton.position.set(window.innerWidth - __buttonMargin, window.innerHeight - __buttonMargin, 0);
+		this.labelAnnouncement.position.set(window.innerWidth * 0.5, window.innerHeight * 0.5, 0);
 	};
 }
 

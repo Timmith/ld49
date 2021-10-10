@@ -27,7 +27,7 @@ import BaseContactListener from "~/physics/contact listeners/BaseContactListener
 import { getBodyEventManager } from "~/physics/managers/bodyEventManager";
 import { getBodyMeshEventManager } from "~/physics/managers/bodyMeshEventManager";
 import { processDestructions, queueDestruction } from "~/physics/managers/destructionManager";
-import { processHUD } from "~/physics/managers/hudManager";
+import { HUD, processHUD, registerHUD } from "~/physics/managers/hudManager";
 import {
 	ArchitectParams,
 	convertTob2Space,
@@ -80,12 +80,15 @@ export default class Testb2World {
 			this._state = value;
 			switch (value) {
 				case "waitingForInput":
+					this.changeAnnouncement("Click to Start!");
 					this.interactive = true;
 					break;
 				case "playing":
+					this.changeAnnouncement("");
 					this.interactive = true;
 					break;
 				case "gameOver":
+					this.changeAnnouncement("Game Over!");
 					this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
 					this.player.currentHeight = 0;
 
@@ -173,6 +176,8 @@ export default class Testb2World {
 			this.detachCursorJoint();
 		}
 	}
+	queuedAnnouncement: string = "";
+	hud: HUD | undefined;
 
 	stateUpdate: (dt: number) => void;
 
@@ -304,6 +309,11 @@ export default class Testb2World {
 		/* Character Spawn/Control */
 
 		const initControls = async () => {
+			const hud = await registerHUD(this.player, this.gui);
+			this.hud = hud;
+			if (this.queuedAnnouncement) {
+				this.hud.announce(this.queuedAnnouncement);
+			}
 			const controls = await startControls(
 				this.b2World,
 				rayCastConverter!,
@@ -327,7 +337,7 @@ export default class Testb2World {
 				kinematicBody
 			);
 
-			this.hourglassButton = controls.ui.hourGlassButton;
+			this.hourglassButton = hud.hourGlassButton;
 			const hourglassButtonUserData = this.hourglassButton.userData;
 			if (hourglassButtonUserData instanceof ButtonUserData) {
 				hourglassButtonUserData.registerHitCallback(() => {
@@ -336,7 +346,7 @@ export default class Testb2World {
 					}
 				});
 			}
-			const fullScreenButton = controls.ui.fullScreenButton;
+			const fullScreenButton = hud.fullScreenButton;
 			const fullScreenButtonUserData = fullScreenButton.userData;
 			if (fullScreenButtonUserData instanceof ToggleButtonUserData) {
 				fullScreenButtonUserData.registerHitCallback(enabled => {
@@ -497,6 +507,13 @@ export default class Testb2World {
 		});
 		this.state = "waitingForInput";
 	} //+++++++++++++++++++++++++++END OF CONSTRUCTOR CURLY BRACKET++++++++++++++++++++++++++++++++//
+	changeAnnouncement(message: string) {
+		if (this.hud) {
+			this.hud.announce(message);
+		} else {
+			this.queuedAnnouncement = message;
+		}
+	}
 	updateHeightMeasurement() {
 		const topThree = this.activeArchitectureBodies
 			.sort((a, b) => b.GetPosition().y - a.GetPosition().y)

@@ -59,11 +59,13 @@ export default class TouchScreenController extends Controller {
 			true
 		);
 
-		this.buildModeButton.userData = new ToggleButtonUserData(enabled => {
+		const tbud = new ToggleButtonUserData();
+		tbud.registerHitCallback(enabled => {
 			if (this.cursorBody) {
 				//
 			}
 		});
+		this.buildModeButton.userData = tbud;
 
 		this.secondtestButton = ui.makeSmallSquare(
 			window.innerWidth - ui.relativeButtonSpacingWidth - ui.relativeButtonSpacingWidth * 2,
@@ -71,7 +73,8 @@ export default class TouchScreenController extends Controller {
 			true,
 			true
 		);
-		this.secondtestButton.userData = new ToggleButtonUserData(enabled => {
+		const tbud2 = new ToggleButtonUserData();
+		tbud2.registerHitCallback(enabled => {
 			if (enabled) {
 				canvas.requestFullscreen();
 				this.secondtestButton.material.opacity = 0.75;
@@ -80,6 +83,7 @@ export default class TouchScreenController extends Controller {
 				this.secondtestButton.material.opacity = 0.3;
 			}
 		});
+		this.secondtestButton.userData = tbud2;
 
 		const onTouchStart = (touchStart: TouchEvent) => {
 			touchStart.preventDefault();

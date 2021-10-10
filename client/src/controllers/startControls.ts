@@ -1,7 +1,6 @@
 import { World } from "box2d";
 import Player from "~/helpers/Player";
 import { Box2DPreviewMesh } from "~/meshes/Box2DPreviewMesh";
-import { registerHUD } from "~/physics/managers/hudManager";
 import SimpleGUIOverlay from "~/ui/SimpleGUIOverlay";
 import { RayCastConverter } from "~/utils/RayCastConverter";
 
@@ -20,7 +19,6 @@ export async function startControls(
 	// b2World.SetContactListener(mcl);
 
 	// const initiateControls = (controller: Controller) => {
-	const ui = await registerHUD(player, gui);
 	// };
 
 	// rigToGamePad(gamePadAPI => initiateControls(new GamePadControls(gamePadAPI)));
@@ -46,5 +44,5 @@ export async function startControls(
 			pu(dt);
 		}
 	};
-	return { postUpdate, ui };
+	return { postUpdate };
 }
