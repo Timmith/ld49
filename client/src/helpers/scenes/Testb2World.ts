@@ -164,15 +164,6 @@ export default class Testb2World {
 			this.stateUpdate = this.stateUpdates[value];
 		}
 	}
-	get lastSelectedBody(): Body | undefined {
-		return this._lastSelectedBody;
-	}
-	set lastSelectedBody(value: Body | undefined) {
-		this._lastSelectedBody = value;
-		if (this.pieceSelectedCallback) {
-			this.pieceSelectedCallback(value);
-		}
-	}
 	get interactive(): boolean {
 		return this._interactive;
 	}
@@ -261,7 +252,6 @@ export default class Testb2World {
 	private hourglassButton: Mesh<BufferGeometry, MeshBasicMaterial> | undefined;
 	private timedTasks: TimedTask[] = [];
 	private _interactive: boolean;
-	private _lastSelectedBody: Body | undefined;
 
 	private _state: GameState = "uninitialized";
 
@@ -272,7 +262,7 @@ export default class Testb2World {
 	constructor(
 		private rayCastConverter?: RayCastConverter,
 		private levelChangeCallback?: (level: number) => void,
-		private pieceSelectedCallback?: (body?: Body) => void
+		private pieceStateChangeCallback?: (body: Body) => void
 	) {
 		this.initiateScene();
 
@@ -575,6 +565,9 @@ export default class Testb2World {
 	onNewPiece = (piece: Piece) => {
 		this.activeArchitectureBodies.push(piece.body);
 		this.togglePieceFloat(piece.body);
+		if (this.pieceStateChangeCallback) {
+			this.pieceStateChangeCallback(piece.body);
+		}
 	};
 
 	HandleKey(code: KeyboardCodes, down: boolean) {
@@ -663,6 +656,9 @@ export default class Testb2World {
 				shouldFloat = userData.floating;
 			} else {
 				userData.floating = shouldFloat;
+				if (this.pieceStateChangeCallback) {
+					this.pieceStateChangeCallback(body);
+				}
 			}
 		}
 		body.SetGravityScale(shouldFloat ? 0 : 1);

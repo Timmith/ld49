@@ -18,8 +18,6 @@ export default class TestGraphics3D extends TestLightingScene {
 	useB2Preview = getUrlFlag("debugPhysics");
 	heightGoal: Object3D | undefined;
 	dangerZone: Object3D | undefined;
-	currentSelectedPiece: Mesh<any, any> | undefined;
-	currentSelectedPieceOriginalMaterial: MeshStandardMaterial;
 
 	constructor() {
 		super(false, false);
@@ -69,28 +67,24 @@ export default class TestGraphics3D extends TestLightingScene {
 				}
 			},
 			body => {
-				if (this.currentSelectedPiece) {
-					this.currentSelectedPiece.material = this.currentSelectedPieceOriginalMaterial;
-					this.currentSelectedPiece = undefined;
-				}
+				const piece = this.graphicsPack.bodyMeshMap.get(body);
+				const pieceUserData = body.GetUserData();
 
-				if (body) {
-					const piece = this.graphicsPack.bodyMeshMap.get(body);
-					const pieceUserData = body.GetUserData();
+				if (piece && isArchitectParams(pieceUserData)) {
+					const mesh = piece.getObjectByName(pieceUserData.meshName);
 
-					if (piece && isArchitectParams(pieceUserData)) {
-						const mesh = piece.getObjectByName(pieceUserData.meshName);
+					if (mesh instanceof Mesh && mesh.material instanceof MeshStandardMaterial) {
+						const material = mesh.material.clone() as MeshStandardMaterial;
 
-						if (mesh instanceof Mesh && mesh.material instanceof MeshStandardMaterial) {
-							this.currentSelectedPieceOriginalMaterial = mesh.material;
-							const material = mesh.material.clone() as MeshStandardMaterial;
-							mesh.material = material;
-
+						if (pieceUserData.floating) {
 							material.emissive.setRGB(0.2, 0.15, 0);
 							material.color.setRGB(1, 1, 0.8);
-
-							this.currentSelectedPiece = mesh;
+						} else {
+							material.emissive.setRGB(0, 0, 0);
+							material.color.setRGB(1, 1, 1);
 						}
+
+						mesh.material = material;
 					}
 				}
 			}
