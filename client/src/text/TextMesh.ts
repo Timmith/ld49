@@ -355,7 +355,8 @@ const initMaterial = (settings: TextSettings) => {
 		vertexShader,
 		fragmentShader,
 		transparent: true,
-		depthWrite: hardText
+		depthWrite: hardText,
+		extensions: { derivatives: true }
 	});
 	material.extensions.derivatives = true;
 

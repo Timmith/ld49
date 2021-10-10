@@ -59,7 +59,8 @@ export class HUD {
 			const material = new MeshBasicMaterial({
 				map: heartTexture,
 				color: new Color(1.2, 0, 0),
-				transparent: true
+				transparent: true,
+				depthWrite: false
 			});
 			const heart = new Mesh(heartIconGeo, material);
 			heart.scale.setScalar(32);

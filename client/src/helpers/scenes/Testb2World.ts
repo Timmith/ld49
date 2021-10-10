@@ -80,7 +80,7 @@ export default class Testb2World {
 			this._state = value;
 			switch (value) {
 				case "waitingForInput":
-					this.changeAnnouncement("Click to Start!");
+					this.changeAnnouncement(`${device.isDesktop ? "Click" : "Touch"} to Start!`);
 					this.interactive = true;
 					break;
 				case "playing":
