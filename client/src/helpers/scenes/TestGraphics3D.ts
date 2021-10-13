@@ -1,4 +1,4 @@
-import { Vec2 } from "box2d";
+import { Body, Vec2 } from "box2d";
 import { Color, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, Plane, Vector3, WebGLRenderer } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import device from "~/device";
@@ -43,50 +43,13 @@ export default class TestGraphics3D extends TestLightingScene {
 				return vec;
 			},
 			level => {
-				simpleTweener.to({
-					target: this.camera.position,
-					propertyGoals: { y: level },
-					easing: Easing.Quartic.InOut,
-					duration: 2000
-				});
-				if (this.heightGoal) {
-					simpleTweener.to({
-						target: this.heightGoal.position,
-						propertyGoals: { y: level - 0.25 },
-						easing: Easing.Quartic.InOut,
-						duration: 2000
-					});
-				}
-				if (this.dangerZone) {
-					simpleTweener.to({
-						target: this.dangerZone.position,
-						propertyGoals: { y: level - 1.55 },
-						easing: Easing.Quartic.InOut,
-						duration: 2000
-					});
-				}
+				this.levelChangeCallback(level);
 			},
 			body => {
-				const piece = this.graphicsPack.bodyMeshMap.get(body);
-				const pieceUserData = body.GetUserData();
-
-				if (piece && isArchitectParams(pieceUserData)) {
-					const mesh = piece.getObjectByName(pieceUserData.meshName);
-
-					if (mesh instanceof Mesh && mesh.material instanceof MeshStandardMaterial) {
-						const material = mesh.material.clone() as MeshStandardMaterial;
-
-						if (pieceUserData.floating) {
-							material.emissive.setRGB(0.2, 0.15, 0);
-							material.color.setRGB(1, 1, 0.8);
-						} else {
-							material.emissive.setRGB(0, 0, 0);
-							material.color.setRGB(1, 1, 1);
-						}
-
-						mesh.material = material;
-					}
-				}
+				this.pieceStateChangeCallback(body);
+			},
+			value => {
+				this.cameraChangeCallback(value);
 			}
 		);
 		this.b2World.autoClear = false;
@@ -157,5 +120,73 @@ export default class TestGraphics3D extends TestLightingScene {
 			this.b2World.render(renderer, dt);
 		}
 		this.b2World.gui.render(renderer);
+	}
+
+	private pieceStateChangeCallback(body: Body) {
+		const piece = this.graphicsPack.bodyMeshMap.get(body);
+		const pieceUserData = body.GetUserData();
+
+		if (piece && isArchitectParams(pieceUserData)) {
+			const mesh = piece.getObjectByName(pieceUserData.meshName);
+
+			if (mesh instanceof Mesh && mesh.material instanceof MeshStandardMaterial) {
+				const material = mesh.material.clone() as MeshStandardMaterial;
+
+				if (pieceUserData.floating) {
+					material.emissive.setRGB(0.2, 0.15, 0);
+					material.color.setRGB(1, 1, 0.8);
+				}
+				// TODO else if (pieceUserData.solidified){material.emissive.setRGB(0, 0, 0);material.color.setRGB(0.7, 0.7, 0.7);}
+				else {
+					material.emissive.setRGB(0, 0, 0);
+					material.color.setRGB(1, 1, 1);
+				}
+
+				mesh.material = material;
+			}
+		}
+	}
+
+	private levelChangeCallback(level: number) {
+		simpleTweener.to({
+			target: this.camera.position,
+			propertyGoals: { y: level },
+			easing: Easing.Quartic.InOut,
+			duration: 2000
+		});
+		if (this.heightGoal) {
+			simpleTweener.to({
+				target: this.heightGoal.position,
+				propertyGoals: { y: level - 0.25 },
+				easing: Easing.Quartic.InOut,
+				duration: 2000
+			});
+		}
+		if (this.dangerZone) {
+			simpleTweener.to({
+				target: this.dangerZone.position,
+				propertyGoals: { y: level - 1.55 },
+				easing: Easing.Quartic.InOut,
+				duration: 2000
+			});
+		}
+	}
+
+	private cameraChangeCallback(value: number) {
+		if (this.camera.position.y + value < 0) {
+			simpleTweener.to({
+				target: this.camera.position,
+				propertyGoals: { y: 0 },
+				easing: Easing.Quartic.InOut,
+				duration: 500
+			});
+		} else {
+			simpleTweener.to({
+				target: this.camera.position,
+				propertyGoals: { y: this.camera.position.y + value },
+				easing: Easing.Quartic.InOut,
+				duration: 500
+			});
+		}
 	}
 }

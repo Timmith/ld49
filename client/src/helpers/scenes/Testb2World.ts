@@ -257,6 +257,7 @@ export default class Testb2World {
 	private hourglassButton: Mesh<BufferGeometry, MeshBasicMaterial> | undefined;
 	private timedTasks: TimedTask[] = [];
 	private _interactive: boolean;
+	private _isCameraChanging: boolean = false;
 
 	private _state: GameState = "uninitialized";
 
@@ -267,7 +268,8 @@ export default class Testb2World {
 	constructor(
 		private rayCastConverter?: RayCastConverter,
 		private levelChangeCallback?: (level: number) => void,
-		private pieceStateChangeCallback?: (body: Body) => void
+		private pieceStateChangeCallback?: (body: Body) => void,
+		private cameraChangeCallback?: (value: number) => void
 	) {
 		this.initiateScene();
 
@@ -360,8 +362,7 @@ export default class Testb2World {
 		};
 		initControls();
 
-		/* Test Environment */
-
+		/* Initiate Base Platform/Environment */
 		createStaticBox(this.b2World, 0, -1, 2, 0.1);
 		createStaticBox(this.b2World, -1, -0.9, 0.2, 0.1);
 		createStaticBox(this.b2World, 1, -0.9, 0.2, 0.1);
@@ -399,8 +400,13 @@ export default class Testb2World {
 
 			if (!buttonHit) {
 				if (this.state === "waitingForInput") {
+					if (this.levelChangeCallback) {
+						this.levelChangeCallback(this.player.currentLevel);
+					}
+					// taskTimer.add(()=>{},2)
+					// meaning to add a delay if the screen needs to transition to the player's current level play height
+					// cannot do it this way, as player is able to interact with pieces before the level timer starts decrementing
 					this.state = "playing";
-
 					this.colorizeHourglassButton(COLOR_HOURGLASS_AVAILABLE);
 				}
 				this.cursorPosition = this.rayCastConverter!(x, y);
@@ -481,12 +487,36 @@ export default class Testb2World {
 			}
 		};
 
+		const onDebugMouseWheel = (wheel: WheelEvent) => {
+			// console.log(` Wheel deltas:
+			// 			 X: ${wheel.deltaX}
+			// 			 Y: ${wheel.deltaY}
+			// 			 Z: ${wheel.deltaZ}`);
+			/* Only the deltaY changes with mouseWheel interaction 
+				wheel.deltaY = -125 when wheelUp
+				wheel.deltaY = 125 when wheelDown */
+
+			if (this.state === "waitingForInput" || this.state === "settling" || this.state === "checking") {
+				const value = wheel.deltaY > 0 ? -1 : 1;
+
+				if (this.cameraChangeCallback && !this._isCameraChanging) {
+					this._isCameraChanging = true;
+					this.cameraChangeCallback(value);
+					taskTimer.add(() => {
+						this._isCameraChanging = false;
+					}, 0.5);
+				}
+			}
+		};
+
 		document.addEventListener("mousedown", onDebugMouseDown, false);
 		document.addEventListener("mouseup", onDebugMouseUp, false);
 		document.addEventListener("mousemove", onDebugMouseMove, false);
 		document.addEventListener("touchstart", onDebugTouchStart, false);
 		document.addEventListener("touchend", onDebugTouchEnd, false);
 		document.addEventListener("touchmove", onDebugTouchMove, false);
+
+		document.addEventListener("wheel", onDebugMouseWheel, false);
 
 		getKeyboardInput().addListener(async (key, down) => {
 			if (down) {
@@ -563,14 +593,14 @@ export default class Testb2World {
 			}).then(this.onNewPiece);
 		});
 	}
-	changeLevel(level: number, resetPlayerData = true) {
+	changeLevel(level: number, resetPlayerTimer = true) {
 		this.player.currentLevel = level;
 		this.b2Preview.offset.y = level;
 
 		this.goalLine.SetPosition(new Vec2(0, -0.25 + level));
 		this.penaltyLine.SetPosition(new Vec2(0, -1.5 + level));
 
-		if (resetPlayerData) {
+		if (resetPlayerTimer) {
 			this.player.maxTimer = __INITIAL_LEVEL_DURATION + level * __LEVEL_DURATION_INCREMENT;
 			this.player.currentTimer = this.player.maxTimer;
 		}
