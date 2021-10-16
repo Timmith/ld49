@@ -65,6 +65,7 @@ let isKeyZDown: boolean = false;
 let isKeyVDown: boolean = false;
 
 const emptyUpdate = (dt: number) => {};
+const noop = () => {};
 const FIXED_PHYSICS_DT = 1 / 120;
 
 const tempVec2 = new Vec2();
@@ -78,92 +79,7 @@ export default class Testb2World {
 		if (this.state !== value) {
 			console.log(value);
 			this._state = value;
-			switch (value) {
-				case "waitingForInput":
-					this.changeAnnouncement(`${device.isDesktop ? "Click" : "Touch"} to Start!`);
-					this.interactive = true;
-					break;
-				case "playing":
-					this.changeAnnouncement("");
-					this.interactive = true;
-					break;
-				case "gameOver":
-					this.changeAnnouncement("Game Over!");
-					this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
-					this.player.currentHeight = 0;
-
-					console.log("Sorry, you lost!");
-
-					this.failedPieces.length = 0;
-
-					this.activeArchitectureBodies.forEach(body => {
-						const fixt = body.GetFixtureList();
-						if (fixt) {
-							queueDestruction(fixt.GetBody());
-						}
-					});
-					this.activeArchitectureBodies.length = 0;
-
-					this.delayedGameEvent(() => {
-						this.changeLevel(0);
-						this.spawn5Pieces();
-						this.player.currentHealth = 5;
-						this.state = "waitingForInput";
-					}, 2);
-					break;
-				case "settling":
-					this.interactive = false;
-					this.turnGravityOn();
-					this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
-					this.delayedGameEvent(() => {
-						this.state = "checking";
-					}, 5);
-					break;
-				case "checking":
-					let contact = this.goalLine.m_contactList;
-					let won = false;
-					while (contact) {
-						if (contact.contact.IsTouching()) {
-							won = true;
-							break;
-						}
-						contact = contact.next;
-					}
-
-					if (this.player.currentHealth === 0) {
-						won = false;
-					}
-
-					if (won) {
-						this.activeArchitectureBodies.forEach(body => {
-							let fixt = body.GetFixtureList();
-							const categoryArray: PBits[] = ["environment"];
-							const userData = body.GetUserData() as ArchitectParams;
-							userData.categoryArray = categoryArray;
-							const bitMask = makeBitMask(categoryArray);
-							while (fixt) {
-								fixt.m_filter.categoryBits = bitMask;
-								fixt = fixt.m_next;
-							}
-						});
-
-						console.log("Congrats, you passed the level!");
-						this.changeLevel(this.player.currentLevel + 1);
-
-						this.delayedGameEvent(() => {
-							this.spawn5Pieces();
-
-							this.state = "waitingForInput";
-						}, 2);
-
-						this.state = "transitioning";
-					} else {
-						this.state = "gameOver";
-					}
-					break;
-				default:
-				//debugger
-			}
+			this.stateChanges[value]();
 			this.stateUpdate = this.stateUpdates[value];
 		}
 	}
@@ -178,6 +94,93 @@ export default class Testb2World {
 	}
 	queuedAnnouncement: string = "";
 	hud: HUD | undefined;
+
+	stateChanges: { [K in GameState]: () => void } = {
+		uninitialized: noop,
+		waitingForInput: () => {
+			this.changeAnnouncement(`${device.isDesktop ? "Click" : "Touch"} to Start!`);
+			this.interactive = true;
+		},
+		playing: () => {
+			this.changeAnnouncement("");
+			this.interactive = true;
+		},
+		settling: () => {
+			this.interactive = false;
+			this.turnGravityOn();
+			this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
+			this.delayedGameEvent(() => {
+				this.state = "checking";
+			}, 5);
+		},
+		checking: () => {
+			let contact = this.goalLine.m_contactList;
+			let won = false;
+			while (contact) {
+				if (contact.contact.IsTouching()) {
+					won = true;
+					break;
+				}
+				contact = contact.next;
+			}
+
+			if (this.player.currentHealth === 0) {
+				won = false;
+			}
+
+			if (won) {
+				this.activeArchitectureBodies.forEach(body => {
+					let fixt = body.GetFixtureList();
+					const categoryArray: PBits[] = ["environment"];
+					const userData = body.GetUserData() as ArchitectParams;
+					userData.categoryArray = categoryArray;
+					const bitMask = makeBitMask(categoryArray);
+					while (fixt) {
+						fixt.m_filter.categoryBits = bitMask;
+						fixt = fixt.m_next;
+					}
+				});
+
+				console.log("Congrats, you passed the level!");
+				this.changeLevel(this.player.currentLevel + 1);
+
+				this.delayedGameEvent(() => {
+					this.spawn5Pieces();
+
+					this.state = "waitingForInput";
+				}, 2);
+
+				this.state = "transitioning";
+			} else {
+				this.state = "gameOver";
+			}
+		},
+		transitioning: noop,
+		gameOver: () => {
+			this.changeAnnouncement("Game Over!");
+			this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
+			this.player.currentHeight = 0;
+
+			console.log("Sorry, you lost!");
+
+			this.failedPieces.length = 0;
+
+			this.activeArchitectureBodies.forEach(body => {
+				const fixt = body.GetFixtureList();
+				if (fixt) {
+					queueDestruction(fixt.GetBody());
+				}
+			});
+			this.activeArchitectureBodies.length = 0;
+
+			this.delayedGameEvent(() => {
+				this.changeLevel(0);
+				this.spawn5Pieces();
+				this.player.currentHealth = 5;
+				this.state = "waitingForInput";
+			}, 2);
+		}
+	};
 
 	stateUpdate: (dt: number) => void;
 
