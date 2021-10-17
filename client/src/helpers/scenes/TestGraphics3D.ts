@@ -132,14 +132,19 @@ export default class TestGraphics3D extends TestLightingScene {
 			if (mesh instanceof Mesh && mesh.material instanceof MeshStandardMaterial) {
 				const material = mesh.material.clone() as MeshStandardMaterial;
 
-				if (pieceUserData.floating) {
-					material.emissive.setRGB(0.2, 0.15, 0);
-					material.color.setRGB(1, 1, 0.8);
-				}
-				// TODO else if (pieceUserData.solidified){material.emissive.setRGB(0, 0, 0);material.color.setRGB(0.7, 0.7, 0.7);}
-				else {
-					material.emissive.setRGB(0, 0, 0);
-					material.color.setRGB(1, 1, 1);
+				switch (pieceUserData.state) {
+					case "floating":
+						material.emissive.setRGB(0.2, 0.15, 0);
+						material.color.setRGB(1, 1, 0.8);
+						break;
+					case "falling":
+						material.emissive.setRGB(0.1, 0.1, 0.1);
+						material.color.setRGB(0.9, 0.9, 0.9);
+						break;
+					case "frozen":
+						material.emissive.setRGB(0, 0, 0);
+						material.color.setRGB(0.6, 0.6, 0.6);
+						break;
 				}
 
 				mesh.material = material;

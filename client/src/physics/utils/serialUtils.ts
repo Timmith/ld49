@@ -33,7 +33,16 @@ export function serializeWorld(gameState: GameState, player: Player, b2World: Wo
 	for (let body = b2World.GetBodyList(); body; body = body.m_next) {
 		if (isArchitectParams(body.m_userData)) {
 			const { x, y } = body.GetPosition();
-			bodies.push({ ...body.m_userData, x, y, angle: body.GetAngle() });
+			const { x: vx, y: vy } = body.GetLinearVelocity();
+			bodies.push({
+				...body.m_userData,
+				x,
+				y,
+				vx,
+				vy,
+				angle: body.GetAngle(),
+				vAngle: body.GetAngularVelocity()
+			});
 		}
 	}
 	return { gameState, player, bodies };

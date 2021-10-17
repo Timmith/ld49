@@ -1,5 +1,6 @@
 import {
 	Body,
+	BodyType,
 	kinematicBody,
 	LinearStiffness,
 	MouseJoint,
@@ -55,7 +56,7 @@ import { startControls } from "../../controllers/startControls";
 import { getMetaContactListener } from "../../physics/utils/contactListenerUtils";
 import { getArchitecturePiece } from "../architectureLibrary";
 import Player from "../Player";
-import { GameState, Piece } from "../types";
+import { GameState, Piece, PieceState } from "../types";
 
 const FOV = 35;
 const MOBILE_FOV = 28;
@@ -155,7 +156,14 @@ export default class Testb2World {
 				this.state = "gameOver";
 			}
 		},
-		transitioning: noop,
+		transitioning: () => {
+			for (const body of this.activeArchitectureBodies) {
+				const userData = body.GetUserData();
+				if (isArchitectParams(userData) && userData.level < this.player.currentLevel - 2) {
+					this.setPieceMode(body, "frozen");
+				}
+			}
+		},
 		gameOver: () => {
 			this.changeAnnouncement("Game Over!");
 			this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
@@ -376,10 +384,14 @@ export default class Testb2World {
 		this.pieceSpawnPoints5.forEach(vec2 => {
 			const { meshName, colliderName } = getArchitecturePiece();
 			createArchitectMeshAndFixtures({
-				floating: true,
+				level: this.player.currentLevel,
+				state: "floating",
 				x: vec2.x,
 				y: vec2.y,
+				vx: 0,
+				vy: 0,
 				angle: 0,
+				vAngle: 0,
 				meshName,
 				colliderName,
 				categoryArray: ["architecture"],
@@ -427,10 +439,14 @@ export default class Testb2World {
 					if (isKeyQDown) {
 						const { meshName, colliderName } = getArchitecturePiece();
 						createArchitectMeshAndFixtures({
-							floating: true,
+							level: this.player.currentLevel,
+							state: "floating",
 							x: clickedb2Space.x,
 							y: clickedb2Space.y,
+							vx: 0,
+							vy: 0,
 							angle: 0,
+							vAngle: 0,
 							meshName,
 							colliderName,
 							categoryArray: ["architecture"],
@@ -584,10 +600,14 @@ export default class Testb2World {
 		this.pieceSpawnPoints5.forEach(vec2 => {
 			const { meshName, colliderName } = getArchitecturePiece();
 			createArchitectMeshAndFixtures({
-				floating: true,
+				level: this.player.currentLevel,
+				state: "floating",
 				x: vec2.x,
 				y: vec2.y + this.player.currentLevel,
+				vx: 0,
+				vy: 0,
 				angle: 0,
+				vAngle: 0,
 				meshName,
 				// "collider" + randInt(3, 1),
 				colliderName,
@@ -614,7 +634,7 @@ export default class Testb2World {
 	}
 	onNewPiece = (piece: Piece) => {
 		this.activeArchitectureBodies.push(piece.body);
-		this.togglePieceFloat(piece.body);
+		this.setPieceMode(piece.body);
 		if (this.pieceStateChangeCallback) {
 			this.pieceStateChangeCallback(piece.body);
 		}
@@ -695,27 +715,41 @@ export default class Testb2World {
 
 	private turnGravityOn() {
 		this.activeArchitectureBodies.forEach(body => {
-			this.togglePieceFloat(body, false);
+			const userData = body.GetUserData();
+			if (isArchitectParams(userData) && userData.state === "floating") {
+				this.setPieceMode(body, "falling");
+			}
 		});
 	}
 
-	private togglePieceFloat(body: Body, shouldFloat?: boolean) {
+	private setPieceMode(body: Body, state?: PieceState) {
 		const userData = body.GetUserData();
 		if (isArchitectParams(userData)) {
-			if (shouldFloat === undefined) {
-				shouldFloat = userData.floating;
+			if (state === undefined) {
+				state = userData.state;
 			} else {
-				userData.floating = shouldFloat;
+				userData.state = state;
 				if (this.pieceStateChangeCallback) {
 					this.pieceStateChangeCallback(body);
 				}
 			}
-		}
-		body.SetGravityScale(shouldFloat ? 0 : 1);
-		body.SetLinearDamping(shouldFloat ? 5 : 0);
-		body.SetAngularDamping(shouldFloat ? 5 : 0);
-		if (!shouldFloat) {
-			body.SetAwake(true);
+			switch (state) {
+				case "floating":
+					body.SetGravityScale(0);
+					body.SetLinearDamping(5);
+					body.SetAngularDamping(5);
+					body.SetType(BodyType.b2_dynamicBody);
+					break;
+				case "falling":
+					body.SetGravityScale(1);
+					body.SetLinearDamping(0);
+					body.SetAngularDamping(0);
+					body.SetAwake(true);
+					body.SetType(BodyType.b2_dynamicBody);
+					break;
+				case "frozen":
+					body.SetType(BodyType.b2_staticBody);
+			}
 		}
 	}
 

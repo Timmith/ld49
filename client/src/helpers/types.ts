@@ -23,4 +23,6 @@ export interface Piece {
 	body: Body;
 	mesh: Object3D;
 }
+
+export type PieceState = "floating" | "falling" | "frozen";
 export type OnNewPieceCallback = (piece: Piece) => void;

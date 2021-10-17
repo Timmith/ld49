@@ -14,6 +14,7 @@ import {
 import { b2Body } from "box2d/build/dynamics/b2_body";
 import { BufferGeometry, Vector2 } from "three";
 import device from "~/device";
+import { PieceState } from "~/helpers/types";
 import { Box2DPreviewMesh, debugViewScale } from "~/meshes/Box2DPreviewMesh";
 import { __pixelPhysicsSize, __tileSize } from "~/settings/constants";
 import TextMesh from "~/text/TextMesh";
@@ -158,10 +159,14 @@ export function createDynamicBox(
 }
 
 export interface ArchitectParams {
-	floating: boolean;
+	level: number;
+	state: PieceState;
 	x: number;
 	y: number;
+	vx: number;
+	vy: number;
 	angle: number;
+	vAngle: number;
 	meshName: string;
 	colliderName?: string;
 	categoryArray?: PBits[];
@@ -185,9 +190,6 @@ export function isArchitectParams(params: any): params is ArchitectParams {
 	if (typeof params.angle !== "number") {
 		return false;
 	}
-	if (typeof params.floating !== "boolean") {
-		return false;
-	}
 	if (typeof params.meshName !== "string") {
 		return false;
 	}
@@ -208,6 +210,8 @@ export async function createArchitectMeshAndFixtures(params: ArchitectParams) {
 
 	const body = getBodyEventManager().createBody(bodyDef);
 	body.SetPositionXY(params.x, params.y);
+	body.SetAngularVelocity(params.vAngle || 0);
+	body.SetLinearVelocity(new Vec2(params.vx, params.vy));
 	body.SetAngle(params.angle);
 
 	const mesh = await getArchitectMeshAndFixtures(
