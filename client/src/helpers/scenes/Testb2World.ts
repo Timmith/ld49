@@ -39,6 +39,7 @@ import {
 } from "~/physics/utils/serialUtils";
 import { __INITIAL_LEVEL_DURATION, __LEVEL_DURATION_INCREMENT, __PHYSICAL_SCALE_METERS } from "~/settings/constants";
 import { removeFromArray } from "~/utils/arrayUtils";
+import { changeCursor } from "~/utils/cursorUtil";
 import EventDispatcher from "~/utils/EventDispatcher";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
 import { getLocalStorageParam, setLocalStorageParam } from "~/utils/localStorage";
@@ -659,11 +660,18 @@ export default class Testb2World {
 		this.detachCursorJoint();
 	}
 	protected onCursorMove(x: number, y: number) {
-		this.cursorPosition = this.rayCastConverter!(x, y);
-		if (this.playerCursorBody) {
+		if (this._cursorClearCheck(x, y)) {
+			const cursorInB2Space: Vec2 = this.rayCastConverter!(x, y);
+
+			this.cursorPosition = this.rayCastConverter!(x, y);
 			this.playerCursorBody.SetPosition(this.cursorPosition);
 			if (this.cursorJoint) {
+				changeCursor("grabbing", 0);
 				this.cursorJoint.SetTarget(this.cursorPosition);
+			} else {
+				if (this.interactive) {
+					changeCursor(queryForSingleArchitectureBody(this.b2World, cursorInB2Space) ? "grab" : "default", 0);
+				}
 			}
 		}
 	}

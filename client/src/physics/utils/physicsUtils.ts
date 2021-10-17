@@ -633,12 +633,12 @@ export function queryForSingleEnvironmentBlock(world: World, clickedb2Space: Vec
 }
 
 const __architectureQueryCallback = new SingleArchitectureBodyQueryCallBack(undefined);
+const testAABB: AABB = new AABB();
 export function queryForSingleArchitectureBody(world: World, clickedb2Space: Vec2, halfAABBsize?: number) {
 	if (!halfAABBsize) {
 		halfAABBsize = 0.001;
 	}
 
-	const testAABB: AABB = new AABB();
 	testAABB.lowerBound.Set(clickedb2Space.x - halfAABBsize, clickedb2Space.y - halfAABBsize);
 	testAABB.upperBound.Set(clickedb2Space.x + halfAABBsize, clickedb2Space.y + halfAABBsize);
 

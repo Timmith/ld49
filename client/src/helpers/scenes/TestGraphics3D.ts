@@ -1,5 +1,15 @@
 import { Body, Vec2 } from "box2d";
-import { Color, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, Plane, Vector3, WebGLRenderer } from "three";
+import {
+	Color,
+	Mesh,
+	MeshBasicMaterial,
+	MeshStandardMaterial,
+	Object3D,
+	Plane,
+	Raycaster,
+	Vector3,
+	WebGLRenderer
+} from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import device from "~/device";
 import TestGraphicsPack from "~/helpers/scenes/TestGraphicsPack";
@@ -9,6 +19,7 @@ import LeaderBoard from "~/misc/Leaderboard";
 import { isArchitectParams } from "~/physics/utils/physicsUtils";
 import { __PHYSICAL_SCALE_METERS } from "~/settings/constants";
 import GameGUI from "~/ui/GameGUI";
+import { changeCursor } from "~/utils/cursorUtil";
 import { getUrlFlag } from "~/utils/location";
 import { hitTestPlaneAtPixel } from "~/utils/math";
 
@@ -47,7 +58,15 @@ export default class TestGraphics3D extends TestLightingScene {
 
 				return vec;
 			},
-			(x: number, y: number) => !this.gui.gui.rayCastForButton(x, y),
+			(x: number, y: number) => {
+				if (this.rayCastForLeaderboard(x, y)) {
+					changeCursor("pointer", 1);
+					return false;
+				} else {
+					changeCursor(undefined, 1);
+				}
+				return !this.gui.gui.rayCastForButton(x, y);
+			},
 			getUrlFlag("debugPysics")
 		);
 		this.b2World.onLevelChange.addListener(level => {
@@ -213,5 +232,15 @@ export default class TestGraphics3D extends TestLightingScene {
 				duration: 500
 			});
 		}
+	}
+
+	private rayCastForLeaderboard(clientX: number, clientY: number) {
+		const rayCast = new Raycaster();
+		rayCast.setFromCamera(
+			{ x: (clientX / window.innerWidth) * 2 - 1, y: -((clientY / window.innerHeight) * 2 - 1) },
+			this.camera
+		);
+		const hitIntersection = rayCast.intersectObject(this.leaderBoard.mesh);
+		return hitIntersection.length > 0;
 	}
 }
