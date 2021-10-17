@@ -63,11 +63,10 @@ export default class SimpleGUIOverlay {
 		const hitIntersection = rayCast.intersectObjects(this._uiButtonMeshes);
 		for (const hit of hitIntersection) {
 			if (hit.object.userData instanceof ToggleButtonUserData || hit.object.userData instanceof ButtonUserData) {
-				hit.object.userData.hit();
-				return true;
+				return hit.object.userData;
 			}
 		}
-		return false;
+		return undefined;
 	}
 
 	setPosition(mesh: Mesh, x: number, y: number) {

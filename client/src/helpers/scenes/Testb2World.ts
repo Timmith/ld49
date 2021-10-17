@@ -297,6 +297,7 @@ export default class Testb2World {
 	onLevelChange = new EventDispatcher<number>();
 	onPieceStateChange = new EventDispatcher<Body>();
 	onCameraChange = new EventDispatcher<number>();
+	onCursorStartEvent = new EventDispatcher<[number, number]>();
 
 	protected scene: Scene;
 	protected camera: Camera;
@@ -596,6 +597,7 @@ export default class Testb2World {
 	}
 
 	protected onCursorStart(x: number, y: number) {
+		this.onCursorStartEvent.dispatch([x, y]);
 		if (this._cursorClearCheck(x, y)) {
 			if (this.state === "waitingForInput") {
 				this.onLevelChange.dispatch(this.player.currentLevel);

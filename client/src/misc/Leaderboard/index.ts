@@ -1,4 +1,5 @@
 import {
+	AdditiveBlending,
 	Mesh,
 	MeshBasicMaterial,
 	Object3D,
@@ -20,16 +21,22 @@ export default class LeaderBoard {
 	private _renderTarget: WebGLRenderTarget;
 	private _leaderboardEntries: Object3D[] = [];
 	private _dirty = true;
-	constructor() {
+	constructor(mesh?: Mesh) {
 		this._scene = new Scene();
 		this._camera = new OrthographicCamera(0, 640, 480, 0, -100, 100);
 		this._renderTarget = new WebGLRenderTarget(640, 480);
-		this.mesh = new Mesh(
-			new PlaneBufferGeometry(1, 1),
-			new MeshBasicMaterial({
-				map: this._renderTarget.texture
-			})
-		);
+		const mat = new MeshBasicMaterial({
+			map: this._renderTarget.texture
+		});
+		if (mesh) {
+			mat.blending = AdditiveBlending;
+			mat.depthTest = false;
+			mat.transparent = true;
+			mesh.material = mat;
+			this.mesh = mesh;
+		} else {
+			this.mesh = new Mesh(new PlaneBufferGeometry(1, 1), mat);
+		}
 		const label = new TextMesh("LEADERBOARD", textSettings.leaderBoardTitle);
 		label.onMeasurementsUpdated = () => {
 			this._dirty = true;

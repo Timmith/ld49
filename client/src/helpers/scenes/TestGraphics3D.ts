@@ -59,16 +59,25 @@ export default class TestGraphics3D extends TestLightingScene {
 				return vec;
 			},
 			(x: number, y: number) => {
-				if (this.rayCastForLeaderboard(x, y)) {
+				const button = this.gui.gui.rayCastForButton(x, y);
+				if (button) {
+					changeCursor("pointer", 1);
+				} else if (this.rayCastForLeaderboard(x, y)) {
 					changeCursor("pointer", 1);
 					return false;
 				} else {
 					changeCursor(undefined, 1);
 				}
-				return !this.gui.gui.rayCastForButton(x, y);
+				return !button;
 			},
 			getUrlFlag("debugPysics")
 		);
+		this.b2World.onCursorStartEvent.addListener(coords => {
+			const button = this.gui.gui.rayCastForButton(coords[0], coords[1]);
+			if (button) {
+				button.hit();
+			}
+		});
 		this.b2World.onLevelChange.addListener(level => {
 			this.levelChangeCallback(level);
 		});
@@ -134,30 +143,60 @@ export default class TestGraphics3D extends TestLightingScene {
 		};
 		initArt();
 
-		const leaderBoard = new LeaderBoard();
-		this.leaderBoard = leaderBoard;
-		const lbMesh = leaderBoard.mesh;
-		lbMesh.scale.set(0.4, 0.3, 1);
-		lbMesh.scale.multiplyScalar(0.5);
-		device.onChange(() => {
-			lbMesh.position.set(-0.2 * device.aspect, -0.2, 4);
-		}, true);
-		lbMesh.rotation.order = "YXZ";
-		lbMesh.rotation.y = Math.PI * 0.2;
-		lbMesh.rotation.x = Math.PI * -0.1;
-		this.scene.add(lbMesh);
+		const initTV = async () => {
+			const gltfLoader = new GLTFLoader();
+			const gltf = await gltfLoader.loadAsync("game/models/tv.glb");
+			for (const child of gltf.scene.children) {
+				child.traverse(obj => {
+					if (obj instanceof Mesh) {
+						obj.castShadow = true;
+						obj.receiveShadow = true;
+					}
+				});
+			}
+			const stage = gltf.scene;
+			stage.scale.multiplyScalar(0.35);
+			// stage.rotation.y += Math.PI * -0.4;
+			stage.rotation.order = "YXZ";
+			stage.rotation.y = Math.PI * 0.2;
+			stage.rotation.x = Math.PI * -0.1;
+			device.onChange(() => {
+				stage.position.set(-0.2 * device.aspect, -0.2, 4);
+			}, true);
+			// stage.position.y -= 1.5;
+			this.scene.add(stage);
+			// const tv = stage.getObjectByName('tv')! as Mesh
+			// tv.material.visible = false
+			const leaderBoard = new LeaderBoard(stage.getObjectByName("screen")! as Mesh);
+			this.leaderBoard = leaderBoard;
+			// const lbMesh = leaderBoard.mesh;
+			// lbMesh.scale.set(0.4, 0.3, 1);
+			// lbMesh.scale.multiplyScalar(0.5);
+			// device.onChange(() => {
+			// 	lbMesh.position.set(-0.2 * device.aspect, -0.2, 4);
+			// }, true);
+			// lbMesh.rotation.order = "YXZ";
+			// lbMesh.rotation.y = Math.PI * 0.2;
+			// lbMesh.rotation.x = Math.PI * -0.1;
+			// this.scene.add(lbMesh);
+		};
+		initTV();
 	}
 
 	update(dt: number) {
 		this.b2World.update(dt);
 		this.graphicsPack.update(dt);
-		this.leaderBoard.update(dt);
+		if (this.leaderBoard) {
+			this.leaderBoard.update(dt);
+		}
 		super.update(dt);
 	}
 	render(renderer: WebGLRenderer, dt: number) {
 		super.render(renderer, dt);
 		this.b2World.render(renderer, dt);
-		this.leaderBoard.render(renderer);
+		if (this.leaderBoard) {
+			this.leaderBoard.render(renderer);
+		}
 		this.gui.render(renderer, dt);
 	}
 
@@ -235,6 +274,9 @@ export default class TestGraphics3D extends TestLightingScene {
 	}
 
 	private rayCastForLeaderboard(clientX: number, clientY: number) {
+		if (!this.leaderBoard) {
+			return false;
+		}
 		const rayCast = new Raycaster();
 		rayCast.setFromCamera(
 			{ x: (clientX / window.innerWidth) * 2 - 1, y: -((clientY / window.innerHeight) * 2 - 1) },
