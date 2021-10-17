@@ -8,14 +8,16 @@ import { simpleTweener } from "~/misc/animation/tweeners";
 import LeaderBoard from "~/misc/Leaderboard";
 import { isArchitectParams } from "~/physics/utils/physicsUtils";
 import { __PHYSICAL_SCALE_METERS } from "~/settings/constants";
+import GameGUI from "~/ui/GameGUI";
 import { getUrlFlag } from "~/utils/location";
 import { hitTestPlaneAtPixel } from "~/utils/math";
 
-import Testb2WorldWithGui from "./Testb2WorldWithGui";
+import Testb2World from "./Testb2World";
 import TestLightingScene from "./TestLighting";
 
 export default class TestGraphics3D extends TestLightingScene {
-	b2World: Testb2WorldWithGui;
+	b2World: Testb2World;
+	gui: GameGUI;
 	graphicsPack: TestGraphicsPack;
 	useB2Preview = getUrlFlag("debugPhysics");
 	heightGoal: Object3D | undefined;
@@ -29,7 +31,7 @@ export default class TestGraphics3D extends TestLightingScene {
 
 		const nuPlane = new Plane(new Vector3(0, 0, -1));
 
-		this.b2World = new Testb2WorldWithGui(
+		this.b2World = new Testb2World(
 			(x, y) => {
 				const vec = new Vec2(x, y);
 				const result = hitTestPlaneAtPixel(
@@ -45,18 +47,20 @@ export default class TestGraphics3D extends TestLightingScene {
 
 				return vec;
 			},
-			level => {
-				this.levelChangeCallback(level);
-			},
-			body => {
-				this.pieceStateChangeCallback(body);
-			},
-			value => {
-				this.cameraChangeCallback(value);
-			},
-			false
+			(x: number, y: number) => !this.gui.gui.rayCastForButton(x, y),
+			getUrlFlag("debugPysics")
 		);
+		this.b2World.onLevelChange.addListener(level => {
+			this.levelChangeCallback(level);
+		});
+		this.b2World.onPieceStateChange.addListener(body => {
+			this.pieceStateChangeCallback(body);
+		});
+		this.b2World.onCameraChange.addListener(value => {
+			this.cameraChangeCallback(value);
+		});
 		this.b2World.autoClear = false;
+		this.gui = new GameGUI(this.b2World);
 
 		this.graphicsPack = new TestGraphicsPack(this.scene);
 
@@ -135,6 +139,7 @@ export default class TestGraphics3D extends TestLightingScene {
 		super.render(renderer, dt);
 		this.b2World.render(renderer, dt);
 		this.leaderBoard.render(renderer);
+		this.gui.render(renderer, dt);
 	}
 
 	private pieceStateChangeCallback(body: Body) {

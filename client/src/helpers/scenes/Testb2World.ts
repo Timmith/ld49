@@ -39,6 +39,7 @@ import {
 } from "~/physics/utils/serialUtils";
 import { __INITIAL_LEVEL_DURATION, __LEVEL_DURATION_INCREMENT, __PHYSICAL_SCALE_METERS } from "~/settings/constants";
 import { removeFromArray } from "~/utils/arrayUtils";
+import EventDispatcher from "~/utils/EventDispatcher";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
 import { getLocalStorageParam, setLocalStorageParam } from "~/utils/localStorage";
 import { getUrlColor, getUrlFlag } from "~/utils/location";
@@ -64,6 +65,10 @@ const FIXED_PHYSICS_DT = 1 / 120;
 const tempVec2 = new Vec2();
 const heightOffset = 0.9;
 
+function __alwaysAllowCursor(x: number, y: number) {
+	return true;
+}
+
 export default class Testb2World {
 	get state(): GameState {
 		return this._state;
@@ -72,6 +77,7 @@ export default class Testb2World {
 		if (this.state !== value) {
 			console.log(value);
 			this._state = value;
+			this.onStateChange.dispatch(value);
 			this.stateUpdate = this.stateUpdates[value];
 			this.stateChanges[value]();
 		}
@@ -88,7 +94,6 @@ export default class Testb2World {
 	savedWorldBeforeSettling: WorldData;
 	simulating: boolean;
 	paused: boolean;
-	queuedAnnouncement: string = "";
 
 	stateChanges: { [K in GameState]: () => void } = {
 		uninitialized: noop,
@@ -284,12 +289,18 @@ export default class Testb2World {
 	currentLevelWinCondition: boolean | undefined;
 	autoClear = true;
 
+	player = new Player();
+
+	onAnnouncementChange = new EventDispatcher<string>();
+	onStateChange = new EventDispatcher<GameState>();
+	onLevelChange = new EventDispatcher<number>();
+	onPieceStateChange = new EventDispatcher<Body>();
+	onCameraChange = new EventDispatcher<number>();
+
 	protected scene: Scene;
 	protected camera: Camera;
 	protected bgColor: Color;
 	protected b2Preview: Box2DPreviewMesh | undefined;
-
-	protected player = new Player();
 
 	private debugMode: boolean = getUrlFlag("debugMode");
 	private failedPieces: Body[] = [];
@@ -314,9 +325,7 @@ export default class Testb2World {
 
 	constructor(
 		private rayCastConverter?: RayCastConverter,
-		private levelChangeCallback?: (level: number) => void,
-		private pieceStateChangeCallback?: (body: Body) => void,
-		private cameraChangeCallback?: (value: number) => void,
+		private _cursorClearCheck: (x: number, y: number) => boolean = __alwaysAllowCursor,
 		drawDebugPhysics = true
 	) {
 		this.initiateScene();
@@ -420,9 +429,9 @@ export default class Testb2World {
 			if (this.state === "waitingForInput" || this.state === "settling" || this.state === "checking") {
 				const value = wheel.deltaY > 0 ? -1 : 1;
 
-				if (this.cameraChangeCallback && !this._isCameraChanging) {
+				if (!this._isCameraChanging) {
 					this._isCameraChanging = true;
-					this.cameraChangeCallback(value);
+					this.onCameraChange.dispatch(value);
 					taskTimer.add(() => {
 						this._isCameraChanging = false;
 					}, 0.5);
@@ -459,7 +468,7 @@ export default class Testb2World {
 		this.state = "waitingForInput";
 	} //+++++++++++++++++++++++++++END OF CONSTRUCTOR CURLY BRACKET++++++++++++++++++++++++++++++++//
 	changeAnnouncement(message: string) {
-		//
+		this.onAnnouncementChange.dispatch(message);
 	}
 
 	updateHeightMeasurement() {
@@ -529,16 +538,12 @@ export default class Testb2World {
 			this.player.currentTimer = this.player.maxTimer;
 		}
 
-		if (this.levelChangeCallback) {
-			this.levelChangeCallback(level);
-		}
+		this.onLevelChange.dispatch(level);
 	}
 	onNewPiece = (piece: Piece) => {
 		this.activeArchitectureBodies.push(piece.body);
 		this.setPieceMode(piece.body);
-		if (this.pieceStateChangeCallback) {
-			this.pieceStateChangeCallback(piece.body);
-		}
+		this.onPieceStateChange.dispatch(piece.body);
 	};
 
 	HandleKey(code: KeyboardCodes, down: boolean) {
@@ -590,65 +595,65 @@ export default class Testb2World {
 	}
 
 	protected onCursorStart(x: number, y: number) {
-		if (this.state === "waitingForInput") {
-			if (this.levelChangeCallback) {
-				this.levelChangeCallback(this.player.currentLevel);
+		if (this._cursorClearCheck(x, y)) {
+			if (this.state === "waitingForInput") {
+				this.onLevelChange.dispatch(this.player.currentLevel);
+				// taskTimer.add(()=>{},2)
+				// meaning to add a delay if the screen needs to transition to the player's current level play height
+				// cannot do it this way, as player is able to interact with pieces before the level timer starts decrementing
+				this.state = "playing";
 			}
-			// taskTimer.add(()=>{},2)
-			// meaning to add a delay if the screen needs to transition to the player's current level play height
-			// cannot do it this way, as player is able to interact with pieces before the level timer starts decrementing
-			this.state = "playing";
+			this.cursorPosition = this.rayCastConverter!(x, y);
+			const clickedb2Space: Vec2 = this.rayCastConverter!(x, y);
+
+			if (this.interactive) {
+				const body = queryForSingleArchitectureBody(this.b2World, clickedb2Space);
+
+				if (body) {
+					this.attachCursorJoint(clickedb2Space, body);
+				}
+			}
+
+			if (this.debugMode) {
+				if (isKeyQDown) {
+					const { meshName, colliderName } = getArchitecturePiece();
+					createArchitectMeshAndFixtures({
+						level: this.player.currentLevel,
+						state: "floating",
+						x: clickedb2Space.x,
+						y: clickedb2Space.y,
+						vx: 0,
+						vy: 0,
+						angle: 0,
+						vAngle: 0,
+						meshName,
+						colliderName,
+						categoryArray: ["architecture"],
+						maskArray: ["penalty", "environment", "architecture", "goal"]
+					}).then(this.onNewPiece);
+				}
+				if (isKeyZDown) {
+					const circleBody = createImprovedPhysicsCircle(
+						this.b2World,
+						clickedb2Space.x,
+						clickedb2Space.y,
+						0.2,
+						["architecture"],
+						["penalty", "environment", "architecture", "goal"],
+						this.player
+					);
+					this.activeArchitectureBodies.push(circleBody);
+				}
+				if (isKeyVDown) {
+					//
+				}
+			}
+
+			/* CONSOLE LOG to notify of click in client space versus game space */
+			// console.log(` Client Space				VS		Game Space
+			// 		 X: ${mouseClick.clientX}			X: ${clickedb2Space.x}
+			// 		 Y: ${mouseClick.clientY}			Y: ${clickedb2Space.y}`);
 		}
-		this.cursorPosition = this.rayCastConverter!(x, y);
-		const clickedb2Space: Vec2 = this.rayCastConverter!(x, y);
-
-		if (this.interactive) {
-			const body = queryForSingleArchitectureBody(this.b2World, clickedb2Space);
-
-			if (body) {
-				this.attachCursorJoint(clickedb2Space, body);
-			}
-		}
-
-		if (this.debugMode) {
-			if (isKeyQDown) {
-				const { meshName, colliderName } = getArchitecturePiece();
-				createArchitectMeshAndFixtures({
-					level: this.player.currentLevel,
-					state: "floating",
-					x: clickedb2Space.x,
-					y: clickedb2Space.y,
-					vx: 0,
-					vy: 0,
-					angle: 0,
-					vAngle: 0,
-					meshName,
-					colliderName,
-					categoryArray: ["architecture"],
-					maskArray: ["penalty", "environment", "architecture", "goal"]
-				}).then(this.onNewPiece);
-			}
-			if (isKeyZDown) {
-				const circleBody = createImprovedPhysicsCircle(
-					this.b2World,
-					clickedb2Space.x,
-					clickedb2Space.y,
-					0.2,
-					["architecture"],
-					["penalty", "environment", "architecture", "goal"],
-					this.player
-				);
-				this.activeArchitectureBodies.push(circleBody);
-			}
-			if (isKeyVDown) {
-				//
-			}
-		}
-
-		/* CONSOLE LOG to notify of click in client space versus game space */
-		// console.log(` Client Space				VS		Game Space
-		// 		 X: ${mouseClick.clientX}			X: ${clickedb2Space.x}
-		// 		 Y: ${mouseClick.clientY}			Y: ${clickedb2Space.y}`);
 	}
 	protected onCursorStop() {
 		this.detachCursorJoint();
@@ -698,9 +703,7 @@ export default class Testb2World {
 				state = userData.state;
 			} else {
 				userData.state = state;
-				if (this.pieceStateChangeCallback) {
-					this.pieceStateChangeCallback(body);
-				}
+				this.onPieceStateChange.dispatch(body);
 			}
 			switch (state) {
 				case "floating":
