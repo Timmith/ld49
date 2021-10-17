@@ -11,11 +11,11 @@ import { __PHYSICAL_SCALE_METERS } from "~/settings/constants";
 import { getUrlFlag } from "~/utils/location";
 import { hitTestPlaneAtPixel } from "~/utils/math";
 
-import Testb2World from "./Testb2World";
+import Testb2WorldWithGui from "./Testb2WorldWithGui";
 import TestLightingScene from "./TestLighting";
 
 export default class TestGraphics3D extends TestLightingScene {
-	b2World: Testb2World;
+	b2World: Testb2WorldWithGui;
 	graphicsPack: TestGraphicsPack;
 	useB2Preview = getUrlFlag("debugPhysics");
 	heightGoal: Object3D | undefined;
@@ -29,7 +29,7 @@ export default class TestGraphics3D extends TestLightingScene {
 
 		const nuPlane = new Plane(new Vector3(0, 0, -1));
 
-		this.b2World = new Testb2World(
+		this.b2World = new Testb2WorldWithGui(
 			(x, y) => {
 				const vec = new Vec2(x, y);
 				const result = hitTestPlaneAtPixel(
@@ -53,7 +53,8 @@ export default class TestGraphics3D extends TestLightingScene {
 			},
 			value => {
 				this.cameraChangeCallback(value);
-			}
+			},
+			false
 		);
 		this.b2World.autoClear = false;
 
@@ -132,11 +133,8 @@ export default class TestGraphics3D extends TestLightingScene {
 	}
 	render(renderer: WebGLRenderer, dt: number) {
 		super.render(renderer, dt);
-		if (this.useB2Preview) {
-			this.b2World.render(renderer, dt);
-		}
+		this.b2World.render(renderer, dt);
 		this.leaderBoard.render(renderer);
-		this.b2World.gui.render(renderer);
 	}
 
 	private pieceStateChangeCallback(body: Body) {

@@ -10,17 +10,7 @@ import {
 	Vec2,
 	World
 } from "box2d";
-import {
-	BufferGeometry,
-	Camera,
-	Color,
-	Fog,
-	Mesh,
-	MeshBasicMaterial,
-	PerspectiveCamera,
-	Scene,
-	WebGLRenderer
-} from "three";
+import { Camera, Color, Fog, PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import device from "~/device";
 import getKeyboardInput from "~/input/getKeyboardInput";
 import { getLeaders, record } from "~/leaderboard";
@@ -29,7 +19,7 @@ import BaseContactListener from "~/physics/contact listeners/BaseContactListener
 import { getBodyEventManager } from "~/physics/managers/bodyEventManager";
 import { getBodyMeshEventManager } from "~/physics/managers/bodyMeshEventManager";
 import { processDestructions, queueDestruction } from "~/physics/managers/destructionManager";
-import { HUD, processHUD, registerHUD } from "~/physics/managers/hudManager";
+import { processHUD } from "~/physics/managers/hudManager";
 import {
 	ArchitectParams,
 	convertTob2Space,
@@ -47,18 +37,14 @@ import {
 	saveLevelDataToLocalStorage,
 	serializeWorld
 } from "~/physics/utils/serialUtils";
-import { canvas } from "~/renderer";
 import { __INITIAL_LEVEL_DURATION, __LEVEL_DURATION_INCREMENT, __PHYSICAL_SCALE_METERS } from "~/settings/constants";
-import SimpleGUIOverlay, { ButtonUserData, ToggleButtonUserData } from "~/ui/SimpleGUIOverlay";
 import { removeFromArray } from "~/utils/arrayUtils";
-import { COLOR_HOURGLASS_AVAILABLE, COLOR_HOURGLASS_UNAVAILABLE } from "~/utils/colorLibrary";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
 import { getLocalStorageParam, setLocalStorageParam } from "~/utils/localStorage";
 import { getUrlColor, getUrlFlag } from "~/utils/location";
 import { RayCastConverter } from "~/utils/RayCastConverter";
 import { taskTimer, TimedTask } from "~/utils/taskTimer";
 
-import { startControls } from "../../controllers/startControls";
 import { getMetaContactListener } from "../../physics/utils/contactListenerUtils";
 import { getArchitecturePiece } from "../architectureLibrary";
 import Player from "../Player";
@@ -79,9 +65,6 @@ const tempVec2 = new Vec2();
 const heightOffset = 0.9;
 
 export default class Testb2World {
-	savedWorldBeforeSettling: WorldData;
-	simulating: boolean;
-	paused: boolean;
 	get state(): GameState {
 		return this._state;
 	}
@@ -102,8 +85,10 @@ export default class Testb2World {
 			this.detachCursorJoint();
 		}
 	}
+	savedWorldBeforeSettling: WorldData;
+	simulating: boolean;
+	paused: boolean;
 	queuedAnnouncement: string = "";
-	hud: HUD | undefined;
 
 	stateChanges: { [K in GameState]: () => void } = {
 		uninitialized: noop,
@@ -122,7 +107,7 @@ export default class Testb2World {
 			this.interactive = false;
 			this.simulating = true;
 			this.turnGravityOn();
-			this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
+			// this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
 			this.delayedGameEvent(() => {
 				this.state = "checking";
 			}, 5);
@@ -182,7 +167,6 @@ export default class Testb2World {
 		gameOver: async () => {
 			this.simulating = false;
 			this.changeAnnouncement("Game Over!");
-			this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
 
 			console.log("Sorry, you lost!");
 
@@ -299,17 +283,16 @@ export default class Testb2World {
 	];
 	currentLevelWinCondition: boolean | undefined;
 	autoClear = true;
-	gui = new SimpleGUIOverlay();
 
 	protected scene: Scene;
 	protected camera: Camera;
 	protected bgColor: Color;
-	protected b2Preview: Box2DPreviewMesh;
+	protected b2Preview: Box2DPreviewMesh | undefined;
+
+	protected player = new Player();
 
 	private debugMode: boolean = getUrlFlag("debugMode");
 	private failedPieces: Body[] = [];
-
-	private player = new Player();
 	private cursorPosition: Vec2;
 	private playerCursorBody: Body;
 	private cursorJoint: MouseJoint | undefined;
@@ -319,7 +302,6 @@ export default class Testb2World {
 	private penaltyLine: Body;
 	private goalLine: Body;
 
-	private hourglassButton: Mesh<BufferGeometry, MeshBasicMaterial> | undefined;
 	private timedTasks: TimedTask[] = [];
 	private _interactive: boolean;
 	private _isCameraChanging: boolean = false;
@@ -334,7 +316,8 @@ export default class Testb2World {
 		private rayCastConverter?: RayCastConverter,
 		private levelChangeCallback?: (level: number) => void,
 		private pieceStateChangeCallback?: (body: Body) => void,
-		private cameraChangeCallback?: (value: number) => void
+		private cameraChangeCallback?: (value: number) => void,
+		drawDebugPhysics = true
 	) {
 		this.initiateScene();
 
@@ -344,15 +327,15 @@ export default class Testb2World {
 		getBodyEventManager().init(b2World);
 		getBodyMeshEventManager().init(b2World);
 
-		// if (getUrlParam("test") === "b2Preview") {
-		const b2Preview = new Box2DPreviewMesh(b2World);
-		this.b2Preview = b2Preview;
-		if (this.b2Preview && !rayCastConverter) {
-			this.rayCastConverter = convertTob2Space.bind(null, this.b2Preview);
+		if (drawDebugPhysics) {
+			const b2Preview = new Box2DPreviewMesh(b2World);
+			this.b2Preview = b2Preview;
+			if (this.b2Preview && !rayCastConverter) {
+				this.rayCastConverter = convertTob2Space.bind(null, this.b2Preview);
+			}
+			this.scene.add(this.b2Preview);
+			debugPolygonPhysics.value = true;
 		}
-		this.scene.add(this.b2Preview);
-		debugPolygonPhysics.value = true;
-		// }
 		this.b2World = b2World;
 
 		/* Using the MetaContactListener, via either initializing one or regrabbing it from reference,
@@ -375,57 +358,19 @@ export default class Testb2World {
 
 		/* Character Spawn/Control */
 
-		const initControls = async () => {
-			const hud = await registerHUD(this.player, this.gui);
-			this.hud = hud;
-			if (this.queuedAnnouncement) {
-				this.hud.announce(this.queuedAnnouncement);
-			}
-			const controls = await startControls(
-				this.b2World,
-				rayCastConverter!,
-				this.gui,
-				this.b2Preview,
-				this.player
-			);
-			this._postUpdates.push(controls.postUpdate);
-
-			this.playerCursorBody = createImprovedPhysicsCircle(
-				this.b2World,
-				0,
-				0,
-				0.05,
-				undefined,
-				undefined,
-				undefined,
-				true,
-				undefined,
-				undefined,
-				kinematicBody
-			);
-
-			this.hourglassButton = hud.hourGlassButton;
-			const hourglassButtonUserData = this.hourglassButton.userData;
-			if (hourglassButtonUserData instanceof ButtonUserData) {
-				hourglassButtonUserData.registerHitCallback(() => {
-					if (this.state === "playing") {
-						this.player.currentTimer = 0;
-					}
-				});
-			}
-			const fullScreenButton = hud.fullScreenButton;
-			const fullScreenButtonUserData = fullScreenButton.userData;
-			if (fullScreenButtonUserData instanceof ToggleButtonUserData) {
-				fullScreenButtonUserData.registerHitCallback(enabled => {
-					if (enabled) {
-						canvas.requestFullscreen();
-					} else {
-						document.exitFullscreen();
-					}
-				});
-			}
-		};
-		initControls();
+		this.playerCursorBody = createImprovedPhysicsCircle(
+			this.b2World,
+			0,
+			0,
+			0.05,
+			undefined,
+			undefined,
+			undefined,
+			true,
+			undefined,
+			undefined,
+			kinematicBody
+		);
 
 		/* Initiate Base Platform/Environment */
 		createStaticBox(this.b2World, 0, -1, 2, 0.1);
@@ -435,132 +380,35 @@ export default class Testb2World {
 		this.penaltyLine = createSensorBox(this.b2World, 0, -1.5, 10, 0.1, ["penalty"], ["architecture"]);
 		this.goalLine = createSensorBox(this.b2World, 0, -0.25, 10, 0.1, ["goal"], ["architecture", "environment"]);
 
-		this.pieceSpawnPoints5.forEach(vec2 => {
-			const { meshName, colliderName } = getArchitecturePiece();
-			createArchitectMeshAndFixtures({
-				level: this.player.currentLevel,
-				state: "floating",
-				x: vec2.x,
-				y: vec2.y,
-				vx: 0,
-				vy: 0,
-				angle: 0,
-				vAngle: 0,
-				meshName,
-				colliderName,
-				categoryArray: ["architecture"],
-				maskArray: ["penalty", "environment", "architecture", "goal"]
-			}).then(this.onNewPiece);
-		});
+		this.spawn5Pieces();
 
 		function getFirstTouch(touchEvent: TouchEvent) {
 			return touchEvent.touches.item(0)!;
 		}
 
-		const onDebugMouseDown = (mouseClick: MouseEvent) => {
-			onCursorStart(mouseClick.clientX, mouseClick.clientY);
+		const onMouseDown = (mouseClick: MouseEvent) => {
+			this.onCursorStart(mouseClick.clientX, mouseClick.clientY);
 		};
-		const onDebugTouchStart = (touchEvent: TouchEvent) => {
+		const onTouchStart = (touchEvent: TouchEvent) => {
 			const touch = getFirstTouch(touchEvent);
-			onCursorStart(touch.clientX, touch.clientY);
+			this.onCursorStart(touch.clientX, touch.clientY);
 		};
-		const onCursorStart = (x: number, y: number) => {
-			const buttonHit = this.gui.rayCastForButton(x, y);
-
-			if (!buttonHit) {
-				if (this.state === "waitingForInput") {
-					if (this.levelChangeCallback) {
-						this.levelChangeCallback(this.player.currentLevel);
-					}
-					// taskTimer.add(()=>{},2)
-					// meaning to add a delay if the screen needs to transition to the player's current level play height
-					// cannot do it this way, as player is able to interact with pieces before the level timer starts decrementing
-					this.state = "playing";
-					this.colorizeHourglassButton(COLOR_HOURGLASS_AVAILABLE);
-				}
-				this.cursorPosition = this.rayCastConverter!(x, y);
-				const clickedb2Space: Vec2 = this.rayCastConverter!(x, y);
-
-				if (this.interactive) {
-					const body = queryForSingleArchitectureBody(b2World, clickedb2Space);
-
-					if (body) {
-						this.attachCursorJoint(clickedb2Space, body);
-					}
-				}
-
-				if (this.debugMode) {
-					if (isKeyQDown) {
-						const { meshName, colliderName } = getArchitecturePiece();
-						createArchitectMeshAndFixtures({
-							level: this.player.currentLevel,
-							state: "floating",
-							x: clickedb2Space.x,
-							y: clickedb2Space.y,
-							vx: 0,
-							vy: 0,
-							angle: 0,
-							vAngle: 0,
-							meshName,
-							colliderName,
-							categoryArray: ["architecture"],
-							maskArray: ["penalty", "environment", "architecture", "goal"]
-						}).then(this.onNewPiece);
-					}
-					if (isKeyZDown) {
-						const circleBody = createImprovedPhysicsCircle(
-							b2World,
-							clickedb2Space.x,
-							clickedb2Space.y,
-							0.2,
-							["architecture"],
-							["penalty", "environment", "architecture", "goal"],
-							this.player
-						);
-						this.activeArchitectureBodies.push(circleBody);
-					}
-					if (isKeyVDown) {
-						//
-					}
-				}
-
-				/* CONSOLE LOG to notify of click in client space versus game space */
-				// console.log(` Client Space				VS		Game Space
-				// 		 X: ${mouseClick.clientX}			X: ${clickedb2Space.x}
-				// 		 Y: ${mouseClick.clientY}			Y: ${clickedb2Space.y}`);
-			}
+		const onMouseUp = (mouseUp: MouseEvent) => {
+			this.onCursorStop();
+		};
+		const onTouchEnd = (touchEvent: TouchEvent) => {
+			this.onCursorStop();
+		};
+		const onMouseMove = (mouseMove: MouseEvent) => {
+			this.onCursorMove(mouseMove.clientX, mouseMove.clientY);
 		};
 
-		const onDebugMouseUp = (mouseUp: MouseEvent) => {
-			onCursorStop();
-		};
-		const onDebugTouchEnd = (touchEvent: TouchEvent) => {
-			onCursorStop();
-		};
-		const onCursorStop = () => {
-			this.detachCursorJoint();
-		};
-
-		const onDebugMouseMove = (mouseMove: MouseEvent) => {
-			onCursorMove(mouseMove.clientX, mouseMove.clientY);
-		};
-
-		const onDebugTouchMove = (touchEvent: TouchEvent) => {
+		const onTouchMove = (touchEvent: TouchEvent) => {
 			const touch = getFirstTouch(touchEvent);
-			onCursorMove(touch.clientX, touch.clientY);
+			this.onCursorMove(touch.clientX, touch.clientY);
 		};
 
-		const onCursorMove = (x: number, y: number) => {
-			this.cursorPosition = this.rayCastConverter!(x, y);
-			if (this.playerCursorBody) {
-				this.playerCursorBody.SetPosition(this.cursorPosition);
-				if (this.cursorJoint) {
-					this.cursorJoint.SetTarget(this.cursorPosition);
-				}
-			}
-		};
-
-		const onDebugMouseWheel = (wheel: WheelEvent) => {
+		const onMouseWheel = (wheel: WheelEvent) => {
 			// console.log(` Wheel deltas:
 			// 			 X: ${wheel.deltaX}
 			// 			 Y: ${wheel.deltaY}
@@ -582,14 +430,14 @@ export default class Testb2World {
 			}
 		};
 
-		document.addEventListener("mousedown", onDebugMouseDown, false);
-		document.addEventListener("mouseup", onDebugMouseUp, false);
-		document.addEventListener("mousemove", onDebugMouseMove, false);
-		document.addEventListener("touchstart", onDebugTouchStart, false);
-		document.addEventListener("touchend", onDebugTouchEnd, false);
-		document.addEventListener("touchmove", onDebugTouchMove, false);
+		document.addEventListener("mousedown", onMouseDown, false);
+		document.addEventListener("mouseup", onMouseUp, false);
+		document.addEventListener("mousemove", onMouseMove, false);
+		document.addEventListener("touchstart", onTouchStart, false);
+		document.addEventListener("touchend", onTouchEnd, false);
+		document.addEventListener("touchmove", onTouchMove, false);
 
-		document.addEventListener("wheel", onDebugMouseWheel, false);
+		document.addEventListener("wheel", onMouseWheel, false);
 
 		getKeyboardInput().addListener(async (key, down) => {
 			if (down) {
@@ -611,12 +459,9 @@ export default class Testb2World {
 		this.state = "waitingForInput";
 	} //+++++++++++++++++++++++++++END OF CONSTRUCTOR CURLY BRACKET++++++++++++++++++++++++++++++++//
 	changeAnnouncement(message: string) {
-		if (this.hud) {
-			this.hud.announce(message);
-		} else {
-			this.queuedAnnouncement = message;
-		}
+		//
 	}
+
 	updateHeightMeasurement() {
 		const topThree = this.activeArchitectureBodies
 			.sort((a, b) => b.GetPosition().y - a.GetPosition().y)
@@ -672,7 +517,9 @@ export default class Testb2World {
 	}
 	changeLevel(level: number, resetPlayerTimer = true) {
 		this.player.currentLevel = level;
-		this.b2Preview.offset.y = level;
+		if (this.b2Preview) {
+			this.b2Preview.offset.y = level;
+		}
 
 		this.goalLine.SetPosition(new Vec2(0, -0.25 + level));
 		this.penaltyLine.SetPosition(new Vec2(0, -1.5 + level));
@@ -740,9 +587,81 @@ export default class Testb2World {
 			renderer.clear(true, true, true);
 		}
 		renderer.render(this.scene, this.camera);
-		this.gui.render(renderer);
 	}
 
+	protected onCursorStart(x: number, y: number) {
+		if (this.state === "waitingForInput") {
+			if (this.levelChangeCallback) {
+				this.levelChangeCallback(this.player.currentLevel);
+			}
+			// taskTimer.add(()=>{},2)
+			// meaning to add a delay if the screen needs to transition to the player's current level play height
+			// cannot do it this way, as player is able to interact with pieces before the level timer starts decrementing
+			this.state = "playing";
+		}
+		this.cursorPosition = this.rayCastConverter!(x, y);
+		const clickedb2Space: Vec2 = this.rayCastConverter!(x, y);
+
+		if (this.interactive) {
+			const body = queryForSingleArchitectureBody(this.b2World, clickedb2Space);
+
+			if (body) {
+				this.attachCursorJoint(clickedb2Space, body);
+			}
+		}
+
+		if (this.debugMode) {
+			if (isKeyQDown) {
+				const { meshName, colliderName } = getArchitecturePiece();
+				createArchitectMeshAndFixtures({
+					level: this.player.currentLevel,
+					state: "floating",
+					x: clickedb2Space.x,
+					y: clickedb2Space.y,
+					vx: 0,
+					vy: 0,
+					angle: 0,
+					vAngle: 0,
+					meshName,
+					colliderName,
+					categoryArray: ["architecture"],
+					maskArray: ["penalty", "environment", "architecture", "goal"]
+				}).then(this.onNewPiece);
+			}
+			if (isKeyZDown) {
+				const circleBody = createImprovedPhysicsCircle(
+					this.b2World,
+					clickedb2Space.x,
+					clickedb2Space.y,
+					0.2,
+					["architecture"],
+					["penalty", "environment", "architecture", "goal"],
+					this.player
+				);
+				this.activeArchitectureBodies.push(circleBody);
+			}
+			if (isKeyVDown) {
+				//
+			}
+		}
+
+		/* CONSOLE LOG to notify of click in client space versus game space */
+		// console.log(` Client Space				VS		Game Space
+		// 		 X: ${mouseClick.clientX}			X: ${clickedb2Space.x}
+		// 		 Y: ${mouseClick.clientY}			Y: ${clickedb2Space.y}`);
+	}
+	protected onCursorStop() {
+		this.detachCursorJoint();
+	}
+	protected onCursorMove(x: number, y: number) {
+		this.cursorPosition = this.rayCastConverter!(x, y);
+		if (this.playerCursorBody) {
+			this.playerCursorBody.SetPosition(this.cursorPosition);
+			if (this.cursorJoint) {
+				this.cursorJoint.SetTarget(this.cursorPosition);
+			}
+		}
+	}
 	private detachCursorJoint() {
 		if (this.cursorJoint) {
 			this.b2World.DestroyJoint(this.cursorJoint);
@@ -761,12 +680,6 @@ export default class Testb2World {
 		LinearStiffness(jointDef, frequencyHz, dampingRatio, jointDef.bodyA, jointDef.bodyB);
 		this.cursorJoint = this.b2World.CreateJoint(jointDef);
 		body.SetAwake(true);
-	}
-
-	private colorizeHourglassButton(color: Color) {
-		if (this.hourglassButton) {
-			this.hourglassButton.material.color.copy(color);
-		}
 	}
 
 	private turnGravityOn() {

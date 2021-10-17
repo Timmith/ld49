@@ -2,6 +2,7 @@ import { Clock, Color, Vector3 } from "three";
 
 import { BaseTestScene } from "./helpers/scenes/BaseTestScene";
 import Testb2World from "./helpers/scenes/Testb2World";
+import Testb2WorldWithGui from "./helpers/scenes/Testb2WorldWithGui";
 import TestCharacterControlScene from "./helpers/scenes/TestCharacterControl";
 import TestCharacterControlOnTextScene from "./helpers/scenes/TestCharacterControlOnText";
 import TestGraphics3D from "./helpers/scenes/TestGraphics3D";
@@ -50,7 +51,8 @@ const testClasses: { [K: string]: any } = {
 	physicsPNG: TestPhysicsPNGScene,
 	stencils: TestStencilsScene,
 	text: TestTextScene,
-	b2Preview: Testb2World,
+	b2d: Testb2World,
+	b2dWithGui: Testb2WorldWithGui,
 	graphics3D: TestGraphics3D
 };
 
