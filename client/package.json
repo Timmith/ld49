@@ -6,6 +6,7 @@
   "description": "W.I.P.",
   "repository": "https://github.com/timmith/ld49",
   "scripts": {
+    "postinstall": "patch-package",
     "start": "yarn dev",
     "dev": "webpack-dev-server --mode development --progress --color --config config/webpack/webpack.config.local.js",
     "dist": "yarn dist:clean && yarn dist:build",
@@ -22,10 +23,10 @@
   "dependencies": {
     "@types/canvasjs": "^1.9.6",
     "@types/socket.io-client": "^1.4.36",
-    "@types/three": "^0.126.1",
+    "@types/three": "^0.133.1",
     "box2d": "flyover/box2d.ts#14fa5fb72c96b4c1f38e7f8af94e669e928d77bf",
     "socket.io-client": "^4.0.0",
-    "three": "^0.126.1",
+    "three": "^0.133.1",
     "three-bmfont-text": "^3.0.1",
     "threejs-camera-controller-first-person-desktop": "^5.0.1",
     "zzfx": "^1.1.8"
@@ -37,6 +38,7 @@
     "glslify-import-loader": "^0.1.2",
     "glslify-loader": "^2.0.0",
     "html-webpack-plugin": "^3.2.0",
+    "patch-package": "^6.4.7",
     "prettier": "^2.4.1",
     "prettier-check": "^2.0.0",
     "raw-loader": "^1.0.0",
