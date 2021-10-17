@@ -11,6 +11,7 @@ import {
 import { getLeaders, listenForLeadersRefresh } from "~/leaderboard";
 import TextMesh from "~/text/TextMesh";
 import { textSettings } from "~/text/TextSettings";
+import { COLOR_BLACK } from "~/utils/colorLibrary";
 
 export default class LeaderBoard {
 	mesh: Mesh;
@@ -37,8 +38,8 @@ export default class LeaderBoard {
 
 		listenForLeadersRefresh(data => {
 			this._dirty = true;
-			for (const mesh of this._leaderboardEntries) {
-				this._scene.remove(mesh);
+			for (const entry of this._leaderboardEntries) {
+				this._scene.remove(entry);
 			}
 			this._leaderboardEntries.length = 0;
 			for (let i = 0; i < data.length; i++) {
@@ -75,6 +76,8 @@ export default class LeaderBoard {
 		if (this._dirty) {
 			this._dirty = false;
 			renderer.setRenderTarget(this._renderTarget);
+			renderer.setClearColor(COLOR_BLACK);
+			renderer.clear(true, true, true);
 			renderer.render(this._scene, this._camera);
 			renderer.setRenderTarget(null);
 		}

@@ -43,7 +43,6 @@ import {
 	queryForSingleArchitectureBody
 } from "~/physics/utils/physicsUtils";
 import {
-	loadLevelData,
 	loadLevelDataFromLocalStorage,
 	saveLevelDataToLocalStorage,
 	serializeWorld
@@ -54,6 +53,7 @@ import SimpleGUIOverlay, { ButtonUserData, ToggleButtonUserData } from "~/ui/Sim
 import { removeFromArray } from "~/utils/arrayUtils";
 import { COLOR_HOURGLASS_AVAILABLE, COLOR_HOURGLASS_UNAVAILABLE } from "~/utils/colorLibrary";
 import { KeyboardCodes } from "~/utils/KeyboardCodes";
+import { getLocalStorageParam, setLocalStorageParam } from "~/utils/localStorage";
 import { getUrlColor, getUrlFlag } from "~/utils/location";
 import { RayCastConverter } from "~/utils/RayCastConverter";
 import { taskTimer, TimedTask } from "~/utils/taskTimer";
@@ -200,7 +200,7 @@ export default class Testb2World {
 					}
 				}
 				if (submitPlace !== -1) {
-					let initials = `---`;
+					let initials = getLocalStorageParam("initials") || `---`;
 					do {
 						initials =
 							window.prompt(
@@ -208,6 +208,7 @@ export default class Testb2World {
 								(initials + `---`).slice(0, 3)
 							) || "---";
 					} while (initials.length !== 3);
+					setLocalStorageParam("initials", initials);
 
 					const result = await record({
 						score,
@@ -215,7 +216,7 @@ export default class Testb2World {
 						details: JSON.stringify(this.savedWorldBeforeSettling)
 					});
 					if (result.ok) {
-						this.changeAnnouncement("Recorded!");
+						getLeaders(10);
 					}
 				}
 			} catch (e) {
@@ -239,11 +240,6 @@ export default class Testb2World {
 				this.player.currentHealth = 5;
 				this.state = "waitingForInput";
 			}, 2);
-
-			this.clearDelayedGameEvents();
-			loadLevelData(this.player, this.savedWorldBeforeSettling, this.onNewPiece).then(() => {
-				this.state = this.savedWorldBeforeSettling.gameState;
-			});
 		}
 	};
 
