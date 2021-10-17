@@ -5,7 +5,9 @@ import device from "~/device";
 import TestGraphicsPack from "~/helpers/scenes/TestGraphicsPack";
 import { Easing } from "~/misc/animation/Easing";
 import { simpleTweener } from "~/misc/animation/tweeners";
+import LeaderBoard from "~/misc/Leaderboard";
 import { isArchitectParams } from "~/physics/utils/physicsUtils";
+import { __PHYSICAL_SCALE_METERS } from "~/settings/constants";
 import { getUrlFlag } from "~/utils/location";
 import { hitTestPlaneAtPixel } from "~/utils/math";
 
@@ -18,6 +20,7 @@ export default class TestGraphics3D extends TestLightingScene {
 	useB2Preview = getUrlFlag("debugPhysics");
 	heightGoal: Object3D | undefined;
 	dangerZone: Object3D | undefined;
+	leaderBoard: LeaderBoard;
 
 	constructor() {
 		super(false, false);
@@ -106,12 +109,25 @@ export default class TestGraphics3D extends TestLightingScene {
 			this.dangerZone = dangerZone;
 		};
 		initArt();
+
+		const leaderBoard = new LeaderBoard();
+		this.leaderBoard = leaderBoard;
+		const lbMesh = leaderBoard.mesh;
+		lbMesh.scale.set(0.4, 0.3, 1);
+		lbMesh.scale.multiplyScalar(0.5);
+		device.onChange(() => {
+			lbMesh.position.set(-0.2 * device.aspect, -0.2, 4);
+		}, true);
+		lbMesh.rotation.order = "YXZ";
+		lbMesh.rotation.y = Math.PI * 0.2;
+		lbMesh.rotation.x = Math.PI * -0.1;
+		this.scene.add(lbMesh);
 	}
 
 	update(dt: number) {
 		this.b2World.update(dt);
 		this.graphicsPack.update(dt);
-
+		this.leaderBoard.update(dt);
 		super.update(dt);
 	}
 	render(renderer: WebGLRenderer, dt: number) {
@@ -119,6 +135,7 @@ export default class TestGraphics3D extends TestLightingScene {
 		if (this.useB2Preview) {
 			this.b2World.render(renderer, dt);
 		}
+		this.leaderBoard.render(renderer);
 		this.b2World.gui.render(renderer);
 	}
 

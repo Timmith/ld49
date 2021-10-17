@@ -23,6 +23,7 @@ import {
 } from "three";
 import device from "~/device";
 import getKeyboardInput from "~/input/getKeyboardInput";
+import { getLeaders, record } from "~/leaderboard";
 import { Box2DPreviewMesh, debugPolygonPhysics } from "~/meshes/Box2DPreviewMesh";
 import BaseContactListener from "~/physics/contact listeners/BaseContactListener";
 import { getBodyEventManager } from "~/physics/managers/bodyEventManager";
@@ -41,7 +42,12 @@ import {
 	PBits,
 	queryForSingleArchitectureBody
 } from "~/physics/utils/physicsUtils";
-import { loadLevelDataFromLocalStorage, saveLevelDataToLocalStorage } from "~/physics/utils/serialUtils";
+import {
+	loadLevelData,
+	loadLevelDataFromLocalStorage,
+	saveLevelDataToLocalStorage,
+	serializeWorld
+} from "~/physics/utils/serialUtils";
 import { canvas } from "~/renderer";
 import { __INITIAL_LEVEL_DURATION, __LEVEL_DURATION_INCREMENT, __PHYSICAL_SCALE_METERS } from "~/settings/constants";
 import SimpleGUIOverlay, { ButtonUserData, ToggleButtonUserData } from "~/ui/SimpleGUIOverlay";
@@ -56,7 +62,7 @@ import { startControls } from "../../controllers/startControls";
 import { getMetaContactListener } from "../../physics/utils/contactListenerUtils";
 import { getArchitecturePiece } from "../architectureLibrary";
 import Player from "../Player";
-import { GameState, Piece, PieceState } from "../types";
+import { GameState, Piece, PieceState, WorldData } from "../types";
 
 const FOV = 35;
 const MOBILE_FOV = 28;
@@ -73,6 +79,9 @@ const tempVec2 = new Vec2();
 const heightOffset = 0.9;
 
 export default class Testb2World {
+	savedWorldBeforeSettling: WorldData;
+	simulating: boolean;
+	paused: boolean;
 	get state(): GameState {
 		return this._state;
 	}
@@ -80,8 +89,8 @@ export default class Testb2World {
 		if (this.state !== value) {
 			console.log(value);
 			this._state = value;
-			this.stateChanges[value]();
 			this.stateUpdate = this.stateUpdates[value];
+			this.stateChanges[value]();
 		}
 	}
 	get interactive(): boolean {
@@ -100,14 +109,18 @@ export default class Testb2World {
 		uninitialized: noop,
 		waitingForInput: () => {
 			this.changeAnnouncement(`${device.isDesktop ? "Click" : "Touch"} to Start!`);
+			this.simulating = false;
 			this.interactive = true;
 		},
 		playing: () => {
 			this.changeAnnouncement("");
+			this.simulating = true;
 			this.interactive = true;
 		},
 		settling: () => {
+			this.changeAnnouncement("");
 			this.interactive = false;
+			this.simulating = true;
 			this.turnGravityOn();
 			this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
 			this.delayedGameEvent(() => {
@@ -116,6 +129,7 @@ export default class Testb2World {
 		},
 		checking: () => {
 			let contact = this.goalLine.m_contactList;
+			this.simulating = true;
 			let won = false;
 			while (contact) {
 				if (contact.contact.IsTouching()) {
@@ -157,6 +171,7 @@ export default class Testb2World {
 			}
 		},
 		transitioning: () => {
+			this.simulating = false;
 			for (const body of this.activeArchitectureBodies) {
 				const userData = body.GetUserData();
 				if (isArchitectParams(userData) && userData.level < this.player.currentLevel - 2) {
@@ -164,12 +179,48 @@ export default class Testb2World {
 				}
 			}
 		},
-		gameOver: () => {
+		gameOver: async () => {
+			this.simulating = false;
 			this.changeAnnouncement("Game Over!");
 			this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
-			this.player.currentHeight = 0;
 
 			console.log("Sorry, you lost!");
+
+			const height = this.player.currentHeight * __PHYSICAL_SCALE_METERS;
+			const score = ~~(height * 100);
+			try {
+				const leaders = await getLeaders(10, 0);
+				let submitPlace = leaders.length < 10 ? leaders.length : -1;
+				if (submitPlace === -1) {
+					for (const leader of leaders) {
+						if (leader.score < score) {
+							submitPlace = leader.place;
+							break;
+						}
+					}
+				}
+				if (submitPlace !== -1) {
+					let initials = `---`;
+					do {
+						initials =
+							window.prompt(
+								`You ranked ${submitPlace} at ${height.toFixed(2)}m! Input your initials (3 chars):`,
+								(initials + `---`).slice(0, 3)
+							) || "---";
+					} while (initials.length !== 3);
+
+					const result = await record({
+						score,
+						summary: initials,
+						details: JSON.stringify(this.savedWorldBeforeSettling)
+					});
+					if (result.ok) {
+						this.changeAnnouncement("Recorded!");
+					}
+				}
+			} catch (e) {
+				console.warn("Leaderboard not available");
+			}
 
 			this.failedPieces.length = 0;
 
@@ -184,9 +235,15 @@ export default class Testb2World {
 			this.delayedGameEvent(() => {
 				this.changeLevel(0);
 				this.spawn5Pieces();
+				this.player.currentHeight = 0;
 				this.player.currentHealth = 5;
 				this.state = "waitingForInput";
 			}, 2);
+
+			this.clearDelayedGameEvents();
+			loadLevelData(this.player, this.savedWorldBeforeSettling, this.onNewPiece).then(() => {
+				this.state = this.savedWorldBeforeSettling.gameState;
+			});
 		}
 	};
 
@@ -207,6 +264,7 @@ export default class Testb2World {
 			// Responsible for level end & checking, settling, gameOver
 			if (this.player.currentTimer < 0) {
 				this.player.currentTimer = 0;
+				this.savedWorldBeforeSettling = serializeWorld(this.state, this.player, this.b2World);
 				this.state = "settling";
 			} else if (this.player.currentHealth === 0) {
 				this.state = "gameOver";
@@ -659,11 +717,13 @@ export default class Testb2World {
 
 	update(dt: number) {
 		this.scene.updateMatrixWorld(false);
-		const targetPhysicsTime = this.player.physicsTime + dt;
+		if (this.simulating && !this.paused) {
+			const targetPhysicsTime = this.player.physicsTime + dt;
 
-		while (this.player.physicsTime < targetPhysicsTime) {
-			this.player.physicsTime += FIXED_PHYSICS_DT;
-			this.b2World.Step(FIXED_PHYSICS_DT, 5, 2);
+			while (this.player.physicsTime < targetPhysicsTime) {
+				this.player.physicsTime += FIXED_PHYSICS_DT;
+				this.b2World.Step(FIXED_PHYSICS_DT, 5, 2);
+			}
 		}
 
 		for (const pu of this._postUpdates) {

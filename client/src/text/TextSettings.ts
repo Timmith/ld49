@@ -96,9 +96,30 @@ const code: TextSettings = {
 	lineHeight: 3,
 	color: 0x009900
 };
+const leaderBoardTitle: TextSettings = {
+	...ui,
+	fontFace: fontFaces.CourierPrimeRegular,
+	size: 72
+};
+const leaderBoardEntry: TextSettings = {
+	...leaderBoardTitle,
+	size: 32
+};
+const leaderBoardEntryLeft: TextSettings = {
+	...leaderBoardEntry,
+	align: "left"
+};
+const leaderBoardEntryRight: TextSettings = {
+	...leaderBoardEntry,
+	align: "right"
+};
 
 export const textSettings = {
 	generic,
+	leaderBoardTitle,
+	leaderBoardEntry,
+	leaderBoardEntryLeft,
+	leaderBoardEntryRight,
 	ui,
 	bold,
 	height,

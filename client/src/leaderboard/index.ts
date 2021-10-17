@@ -13,6 +13,20 @@ export interface Result {
 	summary: string;
 	details: string;
 }
+const __leadersRefreshListeners: Array<(data: Leader[]) => void> = [];
+export function listenForLeadersRefresh(cb: (data: Leader[]) => void) {
+	__leadersRefreshListeners.push(cb);
+	if (__lastKnownLeaders) {
+		cb(__lastKnownLeaders);
+	}
+}
+let __lastKnownLeaders: Leader[] | undefined;
+
+function __updateLeadersListeners() {
+	for (const cb of __leadersRefreshListeners) {
+		cb(__lastKnownLeaders!);
+	}
+}
 
 export async function getLeaders(limit?: number, offset?: number): Promise<Leader[]> {
 	const request =
@@ -25,7 +39,9 @@ export async function getLeaders(limit?: number, offset?: number): Promise<Leade
 			: `${HOST}/leaders?offset=${offset}&limit=${limit}`;
 
 	const response = await fetch(request);
-	return response.json();
+	__lastKnownLeaders = (await response.json()) as Leader[];
+	__updateLeadersListeners();
+	return __lastKnownLeaders;
 }
 
 export async function getDetails(id: number): Promise<string> {
