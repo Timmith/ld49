@@ -1,25 +1,17 @@
-import { Mesh, Object3D, PerspectiveCamera, Raycaster, Vector3, WebGLRenderer } from "three";
+import { Event, Intersection, Mesh, Object3D, PerspectiveCamera, Raycaster, Vector3, WebGLRenderer } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import device from "~/device";
-import TestGraphicsPack from "~/helpers/scenes/TestGraphicsPack";
 import LeaderBoard from "~/misc/Leaderboard";
 import { setRayCasterToCameraInPixels } from "~/physics/utils/rayCastUtils";
 import { __PHYSICAL_SCALE_METERS } from "~/settings/constants";
 import GameGUI from "~/ui/GameGUI";
 import { AnimatedBool } from "~/utils/AnimatedBool";
 import { changeCursor } from "~/utils/cursorUtil";
-import { getUrlFlag } from "~/utils/location";
 
-import Testb2World from "./Testb2World";
 import TestGraphics3D from "./TestGraphics3D";
 
 export default class FullGame extends TestGraphics3D {
-	b2World: Testb2World;
 	gui: GameGUI;
-	graphicsPack: TestGraphicsPack;
-	useB2Preview = getUrlFlag("debugPhysics");
-	heightGoal: Object3D | undefined;
-	dangerZone: Object3D | undefined;
 	leaderBoard: LeaderBoard;
 	tvCamera: PerspectiveCamera;
 	tweenerForCameraGameOrTV = new AnimatedBool(() => {});
@@ -30,10 +22,20 @@ export default class FullGame extends TestGraphics3D {
 		super(
 			(x: number, y: number) => {
 				const button = this.gui.gui.rayCastForButton(x, y);
+				let leaderboardHit: Intersection<Object3D<Event>> | undefined;
 				if (button) {
 					changeCursor("pointer", 2);
-				} else if (this.rayCastForLeaderboard(x, y)) {
-					changeCursor(this.lookingAtTV ? undefined : "pointer", 1);
+				} else if ((leaderboardHit = this.rayCastForLeaderboard(x, y))) {
+					if (this.lookingAtTV) {
+						changeCursor(undefined, 1);
+						if (leaderboardHit.uv) {
+							if (this.leaderBoard) {
+								this.leaderBoard.projectCursorMove(leaderboardHit.uv);
+							}
+						}
+					} else {
+						changeCursor("pointer", 1);
+					}
 					return false;
 				} else {
 					changeCursor(this.lookingAtTV ? "pointer" : undefined, 1);
@@ -137,11 +139,11 @@ export default class FullGame extends TestGraphics3D {
 
 	private rayCastForLeaderboard(clientX: number, clientY: number) {
 		if (!this.leaderBoard) {
-			return false;
+			return undefined;
 		}
 		const rayCast = new Raycaster();
 		setRayCasterToCameraInPixels(rayCast, clientX, clientY, this.camera);
 		const hitIntersection = rayCast.intersectObject(this.leaderBoard.mesh);
-		return hitIntersection.length > 0;
+		return hitIntersection.length > 0 ? hitIntersection[0] : undefined;
 	}
 }

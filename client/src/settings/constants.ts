@@ -12,3 +12,5 @@ export const __INITIAL_LEVEL_DURATION = 30;
 export const __LEVEL_DURATION_INCREMENT = 5;
 
 export const __PHYSICAL_SCALE_METERS = 6; //meters per 1 box2d unit
+
+export const __GIU_Z = -10;

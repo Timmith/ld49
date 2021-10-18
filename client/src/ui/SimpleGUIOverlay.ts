@@ -10,14 +10,13 @@ import {
 } from "three";
 import device from "~/device";
 import { setRayCasterToCameraInPixels } from "~/physics/utils/rayCastUtils";
+import { __GIU_Z } from "~/settings/constants";
 import { AnimatedBool } from "~/utils/AnimatedBool";
 import { removeFromArray } from "~/utils/arrayUtils";
 import EventDispatcher from "~/utils/EventDispatcher";
 import { lerp } from "~/utils/math";
 
 const __rayCaster = new Raycaster();
-
-const __z = 10;
 export default class SimpleGUIOverlay {
 	onOverlayActiveChange = new EventDispatcher<number>();
 	overlayActive = new AnimatedBool(amt => {
@@ -34,7 +33,7 @@ export default class SimpleGUIOverlay {
 	squareButtonDimensions: number = 2.0;
 
 	scene = new Scene();
-	private _camera = new OrthographicCamera(0, window.innerWidth, 0, window.innerHeight, -100, 100);
+	private _camera = new OrthographicCamera(0, window.innerWidth, 0, window.innerHeight, 1, 200);
 	private _fixedRadius: number = 33.3; // <-- good sizing for thumbs (the analogs) on the screen
 	private _uiMeshes: Mesh[] = [];
 	private _uiButtonMeshes: Mesh[] = [];
@@ -84,7 +83,7 @@ export default class SimpleGUIOverlay {
 	}
 
 	setPosition(mesh: Mesh, x: number, y: number) {
-		mesh.position.set(x, y, __z);
+		mesh.position.set(x, y, __GIU_Z);
 	}
 
 	removeUI(mesh: Mesh) {
@@ -147,7 +146,7 @@ export default class SimpleGUIOverlay {
 		uniqueMaterial: boolean = false
 	) {
 		const mesh = new Mesh(geo, this.getMaterial(uniqueMaterial));
-		mesh.position.set(x, y, __z);
+		mesh.position.set(x, y, __GIU_Z);
 		mesh.rotation.x = Math.PI;
 		mesh.scale.setScalar(this._fixedRadius);
 		this.scene.add(mesh);

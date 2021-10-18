@@ -2,32 +2,56 @@ import {
 	AdditiveBlending,
 	Mesh,
 	MeshBasicMaterial,
-	Object3D,
 	OrthographicCamera,
 	PlaneBufferGeometry,
+	Raycaster,
 	Scene,
+	Vector2,
 	WebGLRenderer,
 	WebGLRenderTarget
 } from "three";
 import { getLeaders, listenForLeadersRefresh } from "~/leaderboard";
+import { VhsMaterial } from "~/materials/VhsMaterial";
+import { setRayCasterToCameraInUV } from "~/physics/utils/rayCastUtils";
 import TextMesh from "~/text/TextMesh";
 import { textSettings } from "~/text/TextSettings";
-import { COLOR_BLACK } from "~/utils/colorLibrary";
+import { COLOR_BLACK, COLOR_WHITE } from "~/utils/colorLibrary";
 
+const __z = -10;
 export default class LeaderBoard {
 	mesh: Mesh;
 	private _scene: Scene;
 	private _camera: OrthographicCamera;
 	private _renderTarget: WebGLRenderTarget;
-	private _leaderboardEntries: Object3D[] = [];
+	private _leaderboardEntries: Array<Mesh<PlaneBufferGeometry, MeshBasicMaterial>> = [];
 	private _dirty = true;
+
+	private rayCaster: Raycaster;
+	private _highlightedIndex: number = -1;
+	get highlightedIndex(): number {
+		return this._highlightedIndex;
+	}
+	set highlightedIndex(value: number) {
+		if (this._highlightedIndex !== value) {
+			if (this._highlightedIndex !== -1) {
+				this._leaderboardEntries[this._highlightedIndex].material.visible = false;
+			}
+			this._highlightedIndex = value;
+			if (this._highlightedIndex !== -1) {
+				this._leaderboardEntries[this._highlightedIndex].material.visible = true;
+			}
+			this._dirty = true;
+		}
+	}
 	constructor(mesh?: Mesh) {
 		this._scene = new Scene();
-		this._camera = new OrthographicCamera(0, 640, 480, 0, -100, 100);
+		this._camera = new OrthographicCamera(0, 640, 480, 0, 1, 200);
 		this._renderTarget = new WebGLRenderTarget(640, 480);
-		const mat = new MeshBasicMaterial({
-			map: this._renderTarget.texture
-		});
+		const mat = new VhsMaterial(this._renderTarget.texture);
+		// const mat = new MeshBasicMaterial({
+		// 	map: this._renderTarget.texture
+		// });
+
 		if (mesh) {
 			mat.blending = AdditiveBlending;
 			mat.depthTest = false;
@@ -41,7 +65,8 @@ export default class LeaderBoard {
 		label.onMeasurementsUpdated = () => {
 			this._dirty = true;
 		};
-		label.position.set(320, 480 - 40, 0);
+		label.position.set(320, 480 - 40, __z);
+		const rectGeo = new PlaneBufferGeometry(420, 32);
 
 		listenForLeadersRefresh(data => {
 			this._dirty = true;
@@ -51,7 +76,17 @@ export default class LeaderBoard {
 			this._leaderboardEntries.length = 0;
 			for (let i = 0; i < data.length; i++) {
 				const leader = data[i];
-				const entry = new Object3D();
+				const entry = new Mesh(
+					rectGeo,
+					new MeshBasicMaterial({
+						transparent: true,
+						opacity: 0.2,
+						color: COLOR_WHITE,
+						depthWrite: false,
+						depthTest: false
+					})
+				);
+				entry.material.visible = false;
 				const mesh1 = new TextMesh((leader.place + 1).toString(), textSettings.leaderBoardEntryLeft);
 				mesh1.onMeasurementsUpdated = () => {
 					this._dirty = true;
@@ -64,7 +99,7 @@ export default class LeaderBoard {
 				entry.add(mesh1);
 				entry.add(mesh2);
 				entry.add(mesh3);
-				entry.position.set(320, 480 - 110 - i * 36, 0);
+				entry.position.set(320, 480 - 110 - i * 36, __z);
 				this._leaderboardEntries.push(entry);
 				this._scene.add(entry);
 			}
@@ -77,6 +112,7 @@ export default class LeaderBoard {
 		}
 
 		this._scene.add(label);
+		this.rayCaster = new Raycaster();
 	}
 	update(dt: number) {}
 	render(renderer: WebGLRenderer) {
@@ -87,6 +123,18 @@ export default class LeaderBoard {
 			renderer.clear(true, true, true);
 			renderer.render(this._scene, this._camera);
 			renderer.setRenderTarget(null);
+		}
+	}
+	projectCursorMove(uv: Vector2) {
+		setRayCasterToCameraInUV(this.rayCaster, uv.x, uv.y, this._camera);
+		const intersections = this.rayCaster.intersectObjects(this._leaderboardEntries, false);
+		if (intersections.length === 0) {
+			this.highlightedIndex = -1;
+		} else {
+			for (const intersection of intersections) {
+				const mesh = intersection.object as Mesh<PlaneBufferGeometry, MeshBasicMaterial>;
+				this.highlightedIndex = this._leaderboardEntries.indexOf(mesh);
+			}
 		}
 	}
 }

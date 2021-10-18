@@ -50,6 +50,7 @@ import { taskTimer, TimedTask } from "~/utils/taskTimer";
 import { getMetaContactListener } from "../../physics/utils/contactListenerUtils";
 import { getArchitecturePiece } from "../architectureLibrary";
 import Player from "../Player";
+import { pieceSpawnPoints5 } from "../spawnPoints";
 import { GameState, Piece, PieceState, WorldData } from "../types";
 
 const FOV = 35;
@@ -92,11 +93,27 @@ export default class Testb2World {
 			this.detachCursorJoint();
 		}
 	}
-	savedWorldBeforeSettling: WorldData;
-	simulating: boolean;
 	paused: boolean;
 
-	stateChanges: { [K in GameState]: () => void } = {
+	autoClear = true;
+
+	player = new Player();
+
+	onAnnouncementChange = new EventDispatcher<string>();
+	onStateChange = new EventDispatcher<GameState>();
+	onLevelChange = new EventDispatcher<number>();
+	onPieceStateChange = new EventDispatcher<Body>();
+	onCameraChange = new EventDispatcher<number>();
+	onCursorStartEvent = new EventDispatcher<[number, number]>();
+
+	protected scene: Scene;
+	protected camera: Camera;
+	protected bgColor: Color;
+	protected b2Preview: Box2DPreviewMesh | undefined;
+	private savedWorldBeforeSettling: WorldData;
+	private simulating: boolean;
+
+	private stateChanges: { [K in GameState]: () => void } = {
 		uninitialized: noop,
 		waitingForInput: () => {
 			this.changeAnnouncement(`${device.isDesktop ? "Click" : "Touch"} to Start!`);
@@ -233,9 +250,9 @@ export default class Testb2World {
 		}
 	};
 
-	stateUpdate: (dt: number) => void;
+	private stateUpdate: (dt: number) => void;
 
-	stateUpdates: { [K in GameState]: (dt: number) => void } = {
+	private stateUpdates: { [K in GameState]: (dt: number) => void } = {
 		uninitialized: emptyUpdate,
 
 		waitingForInput: (dt: number) => {
@@ -267,42 +284,6 @@ export default class Testb2World {
 
 		gameOver: emptyUpdate
 	};
-
-	pieceSpawnPoints5: Vec2[] = [
-		new Vec2(-1.55, -0.35),
-		new Vec2(-0.95, 0.65),
-		new Vec2(0.0, 1.0),
-		new Vec2(0.95, 0.65),
-		new Vec2(1.55, -0.35)
-	];
-
-	pieceSpawnPoints9: Vec2[] = [
-		new Vec2(-1.55, -0.35),
-		new Vec2(-1.35, 0.3),
-		new Vec2(-0.95, 0.65),
-		new Vec2(-0.45, 0.85),
-		new Vec2(0.0, 1.0),
-		new Vec2(0.45, 0.85),
-		new Vec2(0.95, 0.65),
-		new Vec2(1.35, 0.3),
-		new Vec2(1.55, -0.35)
-	];
-	currentLevelWinCondition: boolean | undefined;
-	autoClear = true;
-
-	player = new Player();
-
-	onAnnouncementChange = new EventDispatcher<string>();
-	onStateChange = new EventDispatcher<GameState>();
-	onLevelChange = new EventDispatcher<number>();
-	onPieceStateChange = new EventDispatcher<Body>();
-	onCameraChange = new EventDispatcher<number>();
-	onCursorStartEvent = new EventDispatcher<[number, number]>();
-
-	protected scene: Scene;
-	protected camera: Camera;
-	protected bgColor: Color;
-	protected b2Preview: Box2DPreviewMesh | undefined;
 
 	private debugMode: boolean = getUrlFlag("debugMode");
 	private failedPieces: Body[] = [];
@@ -507,7 +488,7 @@ export default class Testb2World {
 		this.timedTasks.length = 0;
 	}
 	spawn5Pieces() {
-		this.pieceSpawnPoints5.forEach(vec2 => {
+		pieceSpawnPoints5.forEach(vec2 => {
 			const { meshName, colliderName } = getArchitecturePiece();
 			createArchitectMeshAndFixtures({
 				level: this.player.currentLevel,

@@ -1,8 +1,8 @@
 // import { Body } from "box2d";
-import { BufferGeometry, Color, Mesh, MeshBasicMaterial, PlaneBufferGeometry, Texture } from "three";
+import { BufferGeometry, Color, DoubleSide, Mesh, MeshBasicMaterial, PlaneBufferGeometry, Texture } from "three";
 import device from "~/device";
 import Player from "~/helpers/Player";
-import { __PHYSICAL_SCALE_METERS } from "~/settings/constants";
+import { __GIU_Z, __PHYSICAL_SCALE_METERS } from "~/settings/constants";
 import TextMesh from "~/text/TextMesh";
 import { TextSettings, textSettings } from "~/text/TextSettings";
 import SimpleGUIOverlay, { ButtonUserData, ToggleButtonUserData } from "~/ui/SimpleGUIOverlay";
@@ -101,9 +101,10 @@ export class HUD {
 
 		this.hourGlassButton = new Mesh(
 			getSharedUiPlaneGeometry(),
-			new MeshBasicMaterial({ map: hourGlassButtonTexture, transparent: true })
+			new MeshBasicMaterial({ map: hourGlassButtonTexture, transparent: true, side: DoubleSide })
 		);
 		this.hourGlassButton.scale.setScalar(64);
+		this.hourGlassButton.position.z = 10;
 
 		passedGUI.registerButton(this.hourGlassButton);
 		this.hourGlassButton.userData = new ButtonUserData();
@@ -142,15 +143,19 @@ export class HUD {
 			const heart = this.hearts[i];
 			heart.position.set((i + 1) * __heartSpacing, __heartSpacing * 1.25, 0);
 		}
-		this.fullScreenButton.position.set(__buttonMargin, window.innerHeight - __buttonMargin, 0);
+		this.fullScreenButton.position.set(__buttonMargin, window.innerHeight - __buttonMargin, __GIU_Z);
 		this.barWidth = window.innerWidth * 0.333;
 		const leftMargin = (window.innerWidth - this.barWidth) * 0.5;
-		this.textTimer.position.set(middleWidth, __barY, 0);
-		this.labelBarTime.position.set(leftMargin - 6, __barY, 0);
-		this.textLevel.position.set(middleWidth, __barY * 0.35, 0);
-		this.textHeight.position.set(middleWidth, window.innerHeight - 30, 0);
-		this.hourGlassButton.position.set(window.innerWidth - __buttonMargin, window.innerHeight - __buttonMargin, 0);
-		this.labelAnnouncement.position.set(window.innerWidth * 0.5, window.innerHeight * 0.5, 0);
+		this.textTimer.position.set(middleWidth, __barY, __GIU_Z);
+		this.labelBarTime.position.set(leftMargin - 6, __barY, __GIU_Z);
+		this.textLevel.position.set(middleWidth, __barY * 0.35, __GIU_Z);
+		this.textHeight.position.set(middleWidth, window.innerHeight - 30, __GIU_Z);
+		this.hourGlassButton.position.set(
+			window.innerWidth - __buttonMargin,
+			window.innerHeight - __buttonMargin,
+			__GIU_Z
+		);
+		this.labelAnnouncement.position.set(window.innerWidth * 0.5, window.innerHeight * 0.5, __GIU_Z);
 	};
 }
 

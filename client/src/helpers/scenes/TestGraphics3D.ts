@@ -24,12 +24,11 @@ import Testb2World from "./Testb2World";
 import TestLightingScene from "./TestLighting";
 
 export default class TestGraphics3D extends TestLightingScene {
-	b2World: Testb2World;
-	graphicsPack: TestGraphicsPack;
-	useB2Preview = getUrlFlag("debugPhysics");
-	heightGoal: Object3D | undefined;
-	dangerZone: Object3D | undefined;
-	gameCamera: PerspectiveCamera;
+	protected b2World: Testb2World;
+	protected gameCamera: PerspectiveCamera;
+	private graphicsPack: TestGraphicsPack;
+	private heightGoal: Object3D | undefined;
+	private dangerZone: Object3D | undefined;
 
 	constructor(
 		cursorClearCheck: (x: number, y: number) => boolean = (x: number, y: number) => true,
