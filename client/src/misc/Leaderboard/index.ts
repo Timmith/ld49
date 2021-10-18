@@ -24,7 +24,7 @@ export default class LeaderBoard {
 	private _camera: OrthographicCamera;
 	private _renderTarget: WebGLRenderTarget;
 	private _leaderboardEntries: Array<Mesh<PlaneBufferGeometry, MeshBasicMaterial>> = [];
-	private _dirty = 3;
+	private _dirty = true;
 
 	private rayCaster: Raycaster;
 	private _highlightedIndex: number = -1;
@@ -40,7 +40,7 @@ export default class LeaderBoard {
 			if (this._highlightedIndex !== -1) {
 				this._leaderboardEntries[this._highlightedIndex].material.visible = true;
 			}
-			this._dirty = 3;
+			this._dirty = true;
 		}
 	}
 	constructor(mesh?: Mesh) {
@@ -63,13 +63,16 @@ export default class LeaderBoard {
 		}
 		const label = new TextMesh("LEADERBOARD", textSettings.leaderBoardTitle);
 		label.onMeasurementsUpdated = () => {
-			this._dirty = 3;
+			this._dirty = true;
 		};
 		label.position.set(320, 480 - 40, __GIU_Z);
 		const rectGeo = new PlaneBufferGeometry(420, 32);
 
 		listenForLeadersRefresh(data => {
-			this._dirty = 3;
+			this._dirty = true;
+			setTimeout(() => {
+				this._dirty = true;
+			}, 1000);
 			for (const entry of this._leaderboardEntries) {
 				this._scene.remove(entry);
 			}
@@ -89,7 +92,7 @@ export default class LeaderBoard {
 				entry.material.visible = false;
 				const mesh1 = new TextMesh((leader.place + 1).toString(), textSettings.leaderBoardEntryLeft);
 				mesh1.onMeasurementsUpdated = () => {
-					this._dirty = 3;
+					this._dirty = true;
 				};
 				const mesh2 = new TextMesh(leader.summary, textSettings.leaderBoardEntry);
 				const mesh3 = new TextMesh(`${(leader.score * 0.01).toFixed(2)}m`, textSettings.leaderBoardEntryRight);
@@ -116,8 +119,8 @@ export default class LeaderBoard {
 	}
 	update(dt: number) {}
 	render(renderer: WebGLRenderer) {
-		if (this._dirty > 0) {
-			this._dirty--;
+		if (this._dirty) {
+			this._dirty = false;
 			renderer.setRenderTarget(this._renderTarget);
 			renderer.setClearColor(COLOR_BLACK);
 			renderer.clear(true, true, true);
