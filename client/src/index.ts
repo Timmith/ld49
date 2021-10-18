@@ -1,6 +1,7 @@
 import { Clock, Color, Vector3 } from "three";
 
 import { BaseTestScene } from "./helpers/scenes/BaseTestScene";
+import FullGame from "./helpers/scenes/FullGame";
 import Testb2World from "./helpers/scenes/Testb2World";
 import Testb2WorldWithGui from "./helpers/scenes/Testb2WorldWithGui";
 import TestCharacterControlScene from "./helpers/scenes/TestCharacterControl";
@@ -53,13 +54,14 @@ const testClasses: { [K: string]: any } = {
 	text: TestTextScene,
 	b2d: Testb2World,
 	b2dWithGui: Testb2WorldWithGui,
-	graphics3D: TestGraphics3D
+	graphics3D: TestGraphics3D,
+	fullGame: FullGame
 };
 
 /* inUrl:[?test=testScenario] selector */
 let TestClass: new () => BaseTestScene = TestLightingScene;
 
-const testParam = getUrlParam("test") || "graphics3D";
+const testParam = getUrlParam("test") || "fullGame";
 const targetFPS = getUrlInt("fps", 60, 1, 240);
 
 if (testClasses.hasOwnProperty(testParam)) {

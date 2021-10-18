@@ -11,9 +11,21 @@ import {
 	WebGLRenderer
 } from "three";
 import device from "~/device";
+import { AnimatedBool } from "~/utils/AnimatedBool";
 import { removeFromArray } from "~/utils/arrayUtils";
+import EventDispatcher from "~/utils/EventDispatcher";
+import { lerp } from "~/utils/math";
 
 export default class SimpleGUIOverlay {
+	onOverlayActiveChange = new EventDispatcher<number>();
+	overlayActive = new AnimatedBool(amt => {
+		this._camera.top = lerp(window.innerHeight * 0.25, 0, amt);
+		this._camera.bottom = lerp(window.innerHeight * 0.75, window.innerHeight, amt);
+		this._camera.left = lerp(window.innerWidth * 0.25, 0, amt);
+		this._camera.right = lerp(window.innerWidth * 0.75, window.innerWidth, amt);
+		this._camera.updateProjectionMatrix();
+		this.onOverlayActiveChange.dispatch(amt);
+	}, true);
 	relativeButtonSpacingWidth: number;
 	relativeButtonSpacingHeight: number;
 	narrowerWindowDimension: number = window.innerWidth < window.innerHeight ? window.innerWidth : window.innerHeight;

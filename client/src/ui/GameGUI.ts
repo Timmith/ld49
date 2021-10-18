@@ -32,6 +32,9 @@ export default class GameGUI {
 
 		const initGui = async () => {
 			const hud = await registerHUD(b2World.player, this.gui);
+			this.gui.onOverlayActiveChange.addListener(amt => {
+				hud.labelAnnouncement.position.y = window.innerHeight * (0.5 - (1 - amt));
+			});
 			this.hud = hud;
 			if (this.queuedAnnouncement) {
 				this.hud.announce(this.queuedAnnouncement);
