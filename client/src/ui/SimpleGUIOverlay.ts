@@ -1,5 +1,4 @@
 import {
-	BoxBufferGeometry,
 	CircleBufferGeometry,
 	Mesh,
 	MeshBasicMaterial,
@@ -7,15 +6,18 @@ import {
 	PlaneBufferGeometry,
 	Raycaster,
 	Scene,
-	Vector3,
 	WebGLRenderer
 } from "three";
 import device from "~/device";
+import { setRayCasterToCameraInPixels } from "~/physics/utils/rayCastUtils";
 import { AnimatedBool } from "~/utils/AnimatedBool";
 import { removeFromArray } from "~/utils/arrayUtils";
 import EventDispatcher from "~/utils/EventDispatcher";
 import { lerp } from "~/utils/math";
 
+const __rayCaster = new Raycaster();
+
+const __z = 10;
 export default class SimpleGUIOverlay {
 	onOverlayActiveChange = new EventDispatcher<number>();
 	overlayActive = new AnimatedBool(amt => {
@@ -43,8 +45,8 @@ export default class SimpleGUIOverlay {
 	private _geometryBig: CircleBufferGeometry;
 	private _geometryMedium: CircleBufferGeometry;
 	private _geometrySmall: CircleBufferGeometry;
-	private _geometrySqaureSmall: BoxBufferGeometry;
-	private _geometryTimerBar: BoxBufferGeometry;
+	private _geometrySqaureSmall: PlaneBufferGeometry;
+	private _geometryTimerBar: PlaneBufferGeometry;
 
 	constructor() {
 		this.scene.add(this._camera);
@@ -71,8 +73,8 @@ export default class SimpleGUIOverlay {
 	}
 
 	rayCastForButton(clientX: number, clientY: number) {
-		const rayCast = new Raycaster(new Vector3(clientX, clientY, -100), new Vector3(0, 0, 1), 0, 200);
-		const hitIntersection = rayCast.intersectObjects(this._uiButtonMeshes);
+		setRayCasterToCameraInPixels(__rayCaster, clientX, clientY, this._camera);
+		const hitIntersection = __rayCaster.intersectObjects(this._uiButtonMeshes);
 		for (const hit of hitIntersection) {
 			if (hit.object.userData instanceof ToggleButtonUserData || hit.object.userData instanceof ButtonUserData) {
 				return hit.object.userData;
@@ -82,7 +84,7 @@ export default class SimpleGUIOverlay {
 	}
 
 	setPosition(mesh: Mesh, x: number, y: number) {
-		mesh.position.set(x, y, 0);
+		mesh.position.set(x, y, __z);
 	}
 
 	removeUI(mesh: Mesh) {
@@ -138,14 +140,14 @@ export default class SimpleGUIOverlay {
 	}
 
 	private _makeUI(
-		geo: BoxBufferGeometry | CircleBufferGeometry | PlaneBufferGeometry,
+		geo: PlaneBufferGeometry | CircleBufferGeometry | PlaneBufferGeometry,
 		x: number,
 		y: number,
 		isButton?: boolean,
 		uniqueMaterial: boolean = false
 	) {
 		const mesh = new Mesh(geo, this.getMaterial(uniqueMaterial));
-		mesh.position.set(x, y, 0);
+		mesh.position.set(x, y, __z);
 		mesh.rotation.x = Math.PI;
 		mesh.scale.setScalar(this._fixedRadius);
 		this.scene.add(mesh);
@@ -196,14 +198,17 @@ export default class SimpleGUIOverlay {
 	}
 	private getSmallSquareGeometry() {
 		if (!this._geometrySqaureSmall) {
-			this._geometrySqaureSmall = new BoxBufferGeometry(this.squareButtonDimensions, this.squareButtonDimensions);
+			this._geometrySqaureSmall = new PlaneBufferGeometry(
+				this.squareButtonDimensions,
+				this.squareButtonDimensions
+			);
 		}
 		return this._geometrySqaureSmall;
 	}
 
 	private getTimerBarGeometry() {
 		if (!this._geometryTimerBar) {
-			this._geometryTimerBar = new BoxBufferGeometry(1.0, 1.0);
+			this._geometryTimerBar = new PlaneBufferGeometry(1.0, 1.0);
 		}
 		return this._geometryTimerBar;
 	}

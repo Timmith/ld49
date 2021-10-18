@@ -3,6 +3,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import device from "~/device";
 import TestGraphicsPack from "~/helpers/scenes/TestGraphicsPack";
 import LeaderBoard from "~/misc/Leaderboard";
+import { setRayCasterToCameraInPixels } from "~/physics/utils/rayCastUtils";
 import { __PHYSICAL_SCALE_METERS } from "~/settings/constants";
 import GameGUI from "~/ui/GameGUI";
 import { AnimatedBool } from "~/utils/AnimatedBool";
@@ -30,12 +31,15 @@ export default class FullGame extends TestGraphics3D {
 			(x: number, y: number) => {
 				const button = this.gui.gui.rayCastForButton(x, y);
 				if (button) {
-					changeCursor("pointer", 1);
+					changeCursor("pointer", 2);
 				} else if (this.rayCastForLeaderboard(x, y)) {
-					changeCursor("pointer", 1);
+					changeCursor(this.lookingAtTV ? undefined : "pointer", 1);
 					return false;
 				} else {
-					changeCursor(undefined, 1);
+					changeCursor(this.lookingAtTV ? "pointer" : undefined, 1);
+				}
+				if (!button) {
+					changeCursor(undefined, 2);
 				}
 				return !button;
 			},
@@ -44,10 +48,11 @@ export default class FullGame extends TestGraphics3D {
 				if (button) {
 					button.hit();
 				} else if (this.rayCastForLeaderboard(coords[0], coords[1])) {
-					this.lookingAtTV = !this.lookingAtTV;
-					this.tweenerForCameraGameOrTV.value = this.lookingAtTV;
-					this.gui.gui.overlayActive.value = !this.lookingAtTV;
-					this.b2World.paused = this.lookingAtTV;
+					if (!this.lookingAtTV) {
+						this.setLookingAtTV(true);
+					}
+				} else if (this.lookingAtTV) {
+					this.setLookingAtTV(false);
 				}
 			}
 		);
@@ -98,6 +103,12 @@ export default class FullGame extends TestGraphics3D {
 		};
 		initTV();
 	}
+	setLookingAtTV(active: boolean) {
+		this.lookingAtTV = active;
+		this.tweenerForCameraGameOrTV.value = this.lookingAtTV;
+		this.gui.gui.overlayActive.value = !this.lookingAtTV;
+		this.b2World.paused = this.lookingAtTV;
+	}
 	update(dt: number) {
 		super.update(dt);
 		if (this.leaderBoard) {
@@ -129,10 +140,7 @@ export default class FullGame extends TestGraphics3D {
 			return false;
 		}
 		const rayCast = new Raycaster();
-		rayCast.setFromCamera(
-			{ x: (clientX / window.innerWidth) * 2 - 1, y: -((clientY / window.innerHeight) * 2 - 1) },
-			this.camera
-		);
+		setRayCasterToCameraInPixels(rayCast, clientX, clientY, this.camera);
 		const hitIntersection = rayCast.intersectObject(this.leaderBoard.mesh);
 		return hitIntersection.length > 0;
 	}

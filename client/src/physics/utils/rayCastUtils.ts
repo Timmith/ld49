@@ -1,4 +1,5 @@
 import { Body, Fixture, RayCastCallback, Vec2 } from "box2d";
+import { Camera, OrthographicCamera, Raycaster } from "three";
 
 export class RayCastClosestCallback extends RayCastCallback {
 	readonly hitPosition: Vec2 = new Vec2();
@@ -41,5 +42,12 @@ export class RayCastClosestCallback extends RayCastCallback {
 		}
 
 		return fraction;
+	}
+}
+
+export function setRayCasterToCameraInPixels(rayCaster: Raycaster, px: number, py: number, camera: Camera) {
+	rayCaster.setFromCamera({ x: (px / window.innerWidth) * 2 - 1, y: -((py / window.innerHeight) * 2 - 1) }, camera);
+	if (camera instanceof OrthographicCamera) {
+		rayCaster.ray.direction.multiplyScalar(-1);
 	}
 }
