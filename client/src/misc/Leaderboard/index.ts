@@ -13,18 +13,18 @@ import {
 import { getLeaders, listenForLeadersRefresh } from "~/leaderboard";
 import { VhsMaterial } from "~/materials/VhsMaterial";
 import { setRayCasterToCameraInUV } from "~/physics/utils/rayCastUtils";
+import { __GIU_Z } from "~/settings/constants";
 import TextMesh from "~/text/TextMesh";
 import { textSettings } from "~/text/TextSettings";
 import { COLOR_BLACK, COLOR_WHITE } from "~/utils/colorLibrary";
 
-const __z = -10;
 export default class LeaderBoard {
 	mesh: Mesh;
 	private _scene: Scene;
 	private _camera: OrthographicCamera;
 	private _renderTarget: WebGLRenderTarget;
 	private _leaderboardEntries: Array<Mesh<PlaneBufferGeometry, MeshBasicMaterial>> = [];
-	private _dirty = true;
+	private _dirty = 3;
 
 	private rayCaster: Raycaster;
 	private _highlightedIndex: number = -1;
@@ -40,7 +40,7 @@ export default class LeaderBoard {
 			if (this._highlightedIndex !== -1) {
 				this._leaderboardEntries[this._highlightedIndex].material.visible = true;
 			}
-			this._dirty = true;
+			this._dirty = 3;
 		}
 	}
 	constructor(mesh?: Mesh) {
@@ -63,13 +63,13 @@ export default class LeaderBoard {
 		}
 		const label = new TextMesh("LEADERBOARD", textSettings.leaderBoardTitle);
 		label.onMeasurementsUpdated = () => {
-			this._dirty = true;
+			this._dirty = 3;
 		};
-		label.position.set(320, 480 - 40, __z);
+		label.position.set(320, 480 - 40, __GIU_Z);
 		const rectGeo = new PlaneBufferGeometry(420, 32);
 
 		listenForLeadersRefresh(data => {
-			this._dirty = true;
+			this._dirty = 3;
 			for (const entry of this._leaderboardEntries) {
 				this._scene.remove(entry);
 			}
@@ -89,7 +89,7 @@ export default class LeaderBoard {
 				entry.material.visible = false;
 				const mesh1 = new TextMesh((leader.place + 1).toString(), textSettings.leaderBoardEntryLeft);
 				mesh1.onMeasurementsUpdated = () => {
-					this._dirty = true;
+					this._dirty = 3;
 				};
 				const mesh2 = new TextMesh(leader.summary, textSettings.leaderBoardEntry);
 				const mesh3 = new TextMesh(`${(leader.score * 0.01).toFixed(2)}m`, textSettings.leaderBoardEntryRight);
@@ -99,7 +99,7 @@ export default class LeaderBoard {
 				entry.add(mesh1);
 				entry.add(mesh2);
 				entry.add(mesh3);
-				entry.position.set(320, 480 - 110 - i * 36, __z);
+				entry.position.set(320, 480 - 110 - i * 36, __GIU_Z);
 				this._leaderboardEntries.push(entry);
 				this._scene.add(entry);
 			}
@@ -116,8 +116,8 @@ export default class LeaderBoard {
 	}
 	update(dt: number) {}
 	render(renderer: WebGLRenderer) {
-		if (this._dirty) {
-			this._dirty = false;
+		if (this._dirty > 0) {
+			this._dirty--;
 			renderer.setRenderTarget(this._renderTarget);
 			renderer.setClearColor(COLOR_BLACK);
 			renderer.clear(true, true, true);
