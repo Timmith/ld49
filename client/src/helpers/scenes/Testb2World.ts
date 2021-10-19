@@ -451,8 +451,8 @@ export default class Testb2World {
 				if (key === "F5") {
 					saveLevelDataToLocalStorage(this.state, this.player, this.b2World);
 				} else if (key === "F9") {
-					const queueDestruction = getBodyDestructionManager(b2World).queueDestruction;
-					this.activeArchitectureBodies.forEach(queueDestruction);
+					const bdm = getBodyDestructionManager(b2World);
+					this.activeArchitectureBodies.forEach(body => bdm.queueDestruction(body));
 					this.activeArchitectureBodies.length = 0;
 
 					const data = await loadLevelDataFromLocalStorage(this.b2World, this.player, this.onNewPiece);
@@ -468,8 +468,8 @@ export default class Testb2World {
 	} //+++++++++++++++++++++++++++END OF CONSTRUCTOR CURLY BRACKET++++++++++++++++++++++++++++++++//
 	async loadGame(data: WorldData, spectatorMode = true) {
 		this.spectatorMode = spectatorMode;
-		const queueDestruction = getBodyDestructionManager(this.b2World).queueDestruction;
-		this.activeArchitectureBodies.forEach(queueDestruction);
+		const bdm = getBodyDestructionManager(this.b2World);
+		this.activeArchitectureBodies.forEach(body => bdm.queueDestruction(body));
 		this.activeArchitectureBodies.length = 0;
 		await loadLevelData(this.b2World, this.player, data, this.onNewPiece);
 		this.changeLevel(data.player.currentLevel, false);
