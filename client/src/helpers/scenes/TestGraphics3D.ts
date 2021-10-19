@@ -20,10 +20,52 @@ import { getUrlFlag } from "~/utils/location";
 import { hitTestPlaneAtPixel } from "~/utils/math";
 
 import { getCopyOfArtStage } from "../art";
+import { PieceState } from "../types";
 import { getCameraSlideDurationForLevel } from "../utils/getCameraSlideDurationForLevel";
 
 import Testb2World from "./Testb2World";
 import TestLightingScene from "./TestLighting";
+
+interface ColorPack {
+	color: Color;
+	emissive: Color;
+}
+
+const __colorPacks: { [K in PieceState]: ColorPack } = {
+	floating: {
+		color: new Color(1, 1, 0.8),
+		emissive: new Color(0.2, 0.15, 0)
+	},
+	falling: {
+		color: new Color(0.9, 0.9, 0.9),
+		emissive: new Color(0.1, 0.1, 0.1)
+	},
+	frozen: {
+		color: new Color(0.6, 0.6, 0.6),
+		emissive: new Color(0, 0, 0)
+	}
+};
+
+const __materialVariationCache = new Map<MeshStandardMaterial, Map<PieceState, MeshStandardMaterial>>();
+
+const __originalMaterialByVariationLookup = new Map<MeshStandardMaterial, MeshStandardMaterial>();
+
+function __getMaterialVariation(material: MeshStandardMaterial, state: PieceState) {
+	const originalMaterial = __originalMaterialByVariationLookup.has(material)
+		? __originalMaterialByVariationLookup.get(material)!
+		: material;
+	if (!__materialVariationCache.has(originalMaterial)) {
+		__materialVariationCache.set(originalMaterial, new Map());
+	}
+	const variations = __materialVariationCache.get(originalMaterial)!;
+	if (!variations.has(state)) {
+		const newMaterial = material.clone() as MeshStandardMaterial;
+		newMaterial.color.copy(__colorPacks[state].color);
+		newMaterial.emissive.copy(__colorPacks[state].emissive);
+		variations.set(state, newMaterial);
+	}
+	return variations.get(state)!;
+}
 
 export default class TestGraphics3D extends TestLightingScene {
 	testB2World: Testb2World;
@@ -143,24 +185,7 @@ export default class TestGraphics3D extends TestLightingScene {
 			const mesh = piece.getObjectByName(pieceUserData.meshName);
 
 			if (mesh instanceof Mesh && mesh.material instanceof MeshStandardMaterial) {
-				const material = mesh.material.clone() as MeshStandardMaterial;
-
-				switch (pieceUserData.state) {
-					case "floating":
-						material.emissive.setRGB(0.2, 0.15, 0);
-						material.color.setRGB(1, 1, 0.8);
-						break;
-					case "falling":
-						material.emissive.setRGB(0.1, 0.1, 0.1);
-						material.color.setRGB(0.9, 0.9, 0.9);
-						break;
-					case "frozen":
-						material.emissive.setRGB(0, 0, 0);
-						material.color.setRGB(0.6, 0.6, 0.6);
-						break;
-				}
-
-				mesh.material = material;
+				mesh.material = __getMaterialVariation(mesh.material, pieceUserData.state);
 			}
 		}
 	}
