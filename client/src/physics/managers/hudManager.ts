@@ -104,7 +104,7 @@ export class HUD {
 			new MeshBasicMaterial({ map: hourGlassButtonTexture, transparent: true, side: DoubleSide })
 		);
 		this.hourGlassButton.scale.setScalar(64);
-		this.hourGlassButton.position.z = 10;
+		this.hourGlassButton.position.z = __GIU_Z;
 
 		passedGUI.registerButton(this.hourGlassButton);
 		this.hourGlassButton.userData = new ButtonUserData(this.hourGlassButton);
@@ -132,7 +132,7 @@ export class HUD {
 		const timerRatio = player.currentTimer / player.maxTimer;
 		const size = timerRatio * this.barWidth;
 		this.timerBar.scale.x = size;
-		this.timerBar.position.set(this.barWidth + size * 0.5, __barY, 0);
+		this.timerBar.position.set(this.barWidth + size * 0.5, __barY, __GIU_Z);
 		this.textTimer.text = `${player.currentTimer.toFixed(2)}`;
 		this.textLevel.text = `Level: ${player.currentLevel + 1}`;
 		this.textHeight.text = `${(player.currentHeight * __PHYSICAL_SCALE_METERS).toFixed(2)}m`;
@@ -141,7 +141,7 @@ export class HUD {
 		const middleWidth = window.innerWidth * 0.5;
 		for (let i = 0; i < this.hearts.length; i++) {
 			const heart = this.hearts[i];
-			heart.position.set((i + 1) * __heartSpacing, __heartSpacing * 1.25, 0);
+			heart.position.set((i + 1) * __heartSpacing, __heartSpacing * 1.25, __GIU_Z);
 		}
 		this.fullScreenButton.position.set(__buttonMargin, window.innerHeight - __buttonMargin, __GIU_Z);
 		this.barWidth = window.innerWidth * 0.333;
