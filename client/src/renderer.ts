@@ -1,8 +1,9 @@
-import { PCFShadowMap, WebGLRenderer } from "three";
+import { PCFShadowMap, WebGLRenderer, WebGLRendererParameters } from "three";
 import { RESET_USER_SETTINGS_TO_DEFAULTS } from "~/settings/constants";
 
 import device from "./device";
 import { devicePixelRatioUniform, pixelSizeInClipSpaceUniform } from "./uniforms";
+import { getUrlFlag } from "./utils/location";
 import { NiceParameter } from "./utils/NiceParameter";
 
 export const canvas = document.createElement("canvas");
@@ -12,8 +13,7 @@ canvas.oncontextmenu = e => {
 	e.stopPropagation();
 };
 
-// const context = canvas.getContext('webgl') as WebGLRenderingContext
-const renderer = new WebGLRenderer({
+const rendererParams: WebGLRendererParameters = {
 	canvas,
 	// context,
 	antialias: true,
@@ -21,7 +21,12 @@ const renderer = new WebGLRenderer({
 	// powerPreference: "high-performance"
 	// powerPreference: "low-power"
 	// preserveDrawingBuffer: true
-});
+};
+if (getUrlFlag("forceWebGL1")) {
+	rendererParams.context = canvas.getContext("webgl") as WebGLRenderingContext;
+}
+
+const renderer = new WebGLRenderer(rendererParams);
 document.body.append(canvas);
 const attributeValues: string[] = ["-moz-crisp-edges", "-webkit-crisp-edges", "pixelated", "crisp-edges"];
 
