@@ -10,7 +10,6 @@ import {
 	Vector3,
 	WebGLRenderer
 } from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import device from "~/device";
 import TestGraphicsPack from "~/helpers/scenes/TestGraphicsPack";
 import { Easing } from "~/misc/animation/Easing";
@@ -20,6 +19,7 @@ import { __PHYSICAL_SCALE_METERS } from "~/settings/constants";
 import { getUrlFlag } from "~/utils/location";
 import { hitTestPlaneAtPixel } from "~/utils/math";
 
+import { getCopyOfArtStage } from "../art";
 import { getCameraSlideDurationForLevel } from "../utils/getCameraSlideDurationForLevel";
 
 import Testb2World from "./Testb2World";
@@ -77,17 +77,7 @@ export default class TestGraphics3D extends TestLightingScene {
 		this.graphicsPack = new TestGraphicsPack(this.scene, this.testB2World.b2World);
 
 		const initArt = async () => {
-			const gltfLoader = new GLTFLoader();
-			const gltf = await gltfLoader.loadAsync("game/models/art.glb");
-			for (const child of gltf.scene.children) {
-				child.traverse(obj => {
-					if (obj instanceof Mesh) {
-						obj.castShadow = true;
-						obj.receiveShadow = true;
-					}
-				});
-			}
-			const stage = gltf.scene;
+			const stage = await getCopyOfArtStage();
 			const heightGoal = stage.getObjectByName("heightGoal");
 			const dangerZone = stage.getObjectByName("dangerZone");
 			const sky = stage.getObjectByName("sky");
