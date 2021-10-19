@@ -1,39 +1,60 @@
 import { Body } from "box2d";
+import { b2World } from "box2d/build/dynamics/b2_world";
 
 import { getBodyEventManager } from "./bodyEventManager";
 import { getBodyMeshEventManager } from "./bodyMeshEventManager";
 
-const destructionQueue: Body[] = [];
-const destructionQueueClearedCallbacks: Array<() => void> = [];
+class BodyDestructionManager {
+	private world: b2World;
+	private destructionQueue: Body[] = [];
+	private destructionQueueClearedCallbacks: Array<() => void> = [];
 
-export function queueDestruction(body: Body) {
-	destructionQueue.push(body);
-}
-
-export function onDestructionQueueCleared(callback: () => void) {
-	destructionQueueClearedCallbacks.push(callback);
-}
-
-export function processDestructions() {
-	if (destructionQueue.length > 0) {
-		for (const body of destructionQueue) {
-			destructBody(body);
+	init(world: b2World) {
+		if (this.world) {
+			throw new Error("cannot initialize twice");
+		} else {
+			this.world = world;
 		}
-		destructionQueue.length = 0;
 	}
-	if (destructionQueueClearedCallbacks.length > 0) {
-		for (const cb of destructionQueueClearedCallbacks) {
-			cb();
+
+	queueDestruction(body: Body) {
+		this.destructionQueue.push(body);
+	}
+
+	onDestructionQueueCleared(callback: () => void) {
+		this.destructionQueueClearedCallbacks.push(callback);
+	}
+
+	processDestructions() {
+		if (this.destructionQueue.length > 0) {
+			for (const body of this.destructionQueue) {
+				this.destructBody(body);
+			}
+			this.destructionQueue.length = 0;
 		}
-		destructionQueueClearedCallbacks.length = 0;
+		if (this.destructionQueueClearedCallbacks.length > 0) {
+			for (const cb of this.destructionQueueClearedCallbacks) {
+				cb();
+			}
+			this.destructionQueueClearedCallbacks.length = 0;
+		}
+	}
+
+	destructBody(body: Body) {
+		try {
+			getBodyEventManager(this.world).destroyBody(body);
+			getBodyMeshEventManager(this.world).destroyBody(body);
+		} catch (e) {
+			console.log(e);
+		}
 	}
 }
 
-function destructBody(body: Body) {
-	try {
-		getBodyEventManager().destroyBody(body);
-		getBodyMeshEventManager().destroyBody(body);
-	} catch (e) {
-		console.log(e);
+const bdms = new Map<b2World, BodyDestructionManager>();
+
+export function getBodyDestructionManager(world: b2World) {
+	if (!bdms.has(world)) {
+		bdms.set(world, new BodyDestructionManager());
 	}
+	return bdms.get(world)!;
 }

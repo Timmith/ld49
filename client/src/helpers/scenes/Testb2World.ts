@@ -18,7 +18,7 @@ import { Box2DPreviewMesh, debugPolygonPhysics } from "~/meshes/Box2DPreviewMesh
 import BaseContactListener from "~/physics/contact listeners/BaseContactListener";
 import { getBodyEventManager } from "~/physics/managers/bodyEventManager";
 import { getBodyMeshEventManager } from "~/physics/managers/bodyMeshEventManager";
-import { processDestructions, queueDestruction } from "~/physics/managers/destructionManager";
+import { getBodyDestructionManager } from "~/physics/managers/destructionManager";
 import { processHUD } from "~/physics/managers/hudManager";
 import {
 	ArchitectParams,
@@ -33,6 +33,7 @@ import {
 	queryForSingleArchitectureBody
 } from "~/physics/utils/physicsUtils";
 import {
+	loadLevelData,
 	loadLevelDataFromLocalStorage,
 	saveLevelDataToLocalStorage,
 	serializeWorld
@@ -52,6 +53,7 @@ import { getArchitecturePiece } from "../architectureLibrary";
 import Player from "../Player";
 import { pieceSpawnPoints5 } from "../spawnPoints";
 import { GameState, Piece, PieceState, WorldData } from "../types";
+import { getCameraSlideDurationForLevel } from "../utils/getCameraSlideDurationForLevel";
 
 const FOV = 35;
 const MOBILE_FOV = 28;
@@ -72,6 +74,7 @@ function __alwaysAllowCursor(x: number, y: number) {
 }
 
 export default class Testb2World {
+	spectatorMode: any;
 	get state(): GameState {
 		return this._state;
 	}
@@ -106,6 +109,8 @@ export default class Testb2World {
 	onCameraChange = new EventDispatcher<number>();
 	onCursorStartEvent = new EventDispatcher<[number, number]>();
 
+	b2World: World;
+
 	protected scene: Scene;
 	protected camera: Camera;
 	protected bgColor: Color;
@@ -132,7 +137,9 @@ export default class Testb2World {
 			this.turnGravityOn();
 			// this.colorizeHourglassButton(COLOR_HOURGLASS_UNAVAILABLE);
 			this.delayedGameEvent(() => {
-				this.state = "checking";
+				if (!this.spectatorMode) {
+					this.state = "checking";
+				}
 			}, 5);
 		},
 		checking: () => {
@@ -188,6 +195,9 @@ export default class Testb2World {
 			}
 		},
 		gameOver: async () => {
+			if (this.spectatorMode) {
+				return;
+			}
 			this.simulating = false;
 			this.changeAnnouncement("Game Over!");
 
@@ -235,7 +245,7 @@ export default class Testb2World {
 			this.activeArchitectureBodies.forEach(body => {
 				const fixt = body.GetFixtureList();
 				if (fixt) {
-					queueDestruction(fixt.GetBody());
+					getBodyDestructionManager(this.b2World).queueDestruction(fixt.GetBody());
 				}
 			});
 			this.activeArchitectureBodies.length = 0;
@@ -267,9 +277,11 @@ export default class Testb2World {
 			// Responsible for level end & checking, settling, gameOver
 			if (this.player.currentTimer < 0) {
 				this.player.currentTimer = 0;
-				this.savedWorldBeforeSettling = serializeWorld(this.state, this.player, this.b2World);
+				if (!this.spectatorMode) {
+					this.savedWorldBeforeSettling = serializeWorld(this.state, this.player, this.b2World);
+				}
 				this.state = "settling";
-			} else if (this.player.currentHealth === 0) {
+			} else if (this.player.currentHealth === 0 && !this.spectatorMode) {
 				this.state = "gameOver";
 			}
 		},
@@ -302,8 +314,6 @@ export default class Testb2World {
 
 	private _state: GameState = "uninitialized";
 
-	private b2World: World;
-
 	private _postUpdates: Array<(dt: number) => void> = [];
 
 	constructor(
@@ -316,8 +326,9 @@ export default class Testb2World {
 		const b2World = new World(new Vec2(0, 0));
 		b2World.SetGravity(new Vec2(0, -9.8));
 
-		getBodyEventManager().init(b2World);
-		getBodyMeshEventManager().init(b2World);
+		getBodyEventManager(b2World).init(b2World);
+		getBodyMeshEventManager(b2World).init(b2World);
+		getBodyDestructionManager(b2World).init(b2World);
 
 		if (drawDebugPhysics) {
 			const b2Preview = new Box2DPreviewMesh(b2World);
@@ -339,7 +350,7 @@ export default class Testb2World {
 				this.failedPieces.push(body);
 				this.player.currentHealth = Math.max(0, this.player.currentHealth + healthDelta);
 			}
-			queueDestruction(body);
+			getBodyDestructionManager(b2World).queueDestruction(body);
 			removeFromArray(this.activeArchitectureBodies, body);
 		});
 		mcl.register(bcl);
@@ -372,7 +383,11 @@ export default class Testb2World {
 		this.penaltyLine = createSensorBox(this.b2World, 0, -1.5, 10, 0.1, ["penalty"], ["architecture"]);
 		this.goalLine = createSensorBox(this.b2World, 0, -0.25, 10, 0.1, ["goal"], ["architecture", "environment"]);
 
-		this.spawn5Pieces();
+		setTimeout(() => {
+			if (!this.spectatorMode) {
+				this.spawn5Pieces();
+			}
+		}, 100);
 
 		function getFirstTouch(touchEvent: TouchEvent) {
 			return touchEvent.touches.item(0)!;
@@ -436,10 +451,11 @@ export default class Testb2World {
 				if (key === "F5") {
 					saveLevelDataToLocalStorage(this.state, this.player, this.b2World);
 				} else if (key === "F9") {
+					const queueDestruction = getBodyDestructionManager(b2World).queueDestruction;
 					this.activeArchitectureBodies.forEach(queueDestruction);
 					this.activeArchitectureBodies.length = 0;
 
-					const data = await loadLevelDataFromLocalStorage(this.player, this.onNewPiece);
+					const data = await loadLevelDataFromLocalStorage(this.b2World, this.player, this.onNewPiece);
 					if (data) {
 						this.state = data.gameState;
 						this.changeLevel(data.player.currentLevel, false);
@@ -450,6 +466,18 @@ export default class Testb2World {
 		});
 		this.state = "waitingForInput";
 	} //+++++++++++++++++++++++++++END OF CONSTRUCTOR CURLY BRACKET++++++++++++++++++++++++++++++++//
+	async loadGame(data: WorldData, spectatorMode = true) {
+		this.spectatorMode = spectatorMode;
+		const queueDestruction = getBodyDestructionManager(this.b2World).queueDestruction;
+		this.activeArchitectureBodies.forEach(queueDestruction);
+		this.activeArchitectureBodies.length = 0;
+		await loadLevelData(this.b2World, this.player, data, this.onNewPiece);
+		this.changeLevel(data.player.currentLevel, false);
+		this.state = data.gameState;
+		if (spectatorMode) {
+			this.player.currentTimer = getCameraSlideDurationForLevel(this.player.currentLevel) * 0.001;
+		}
+	}
 	changeAnnouncement(message: string) {
 		this.onAnnouncementChange.dispatch(message);
 	}
@@ -490,7 +518,7 @@ export default class Testb2World {
 	spawn5Pieces() {
 		pieceSpawnPoints5.forEach(vec2 => {
 			const { meshName, colliderName } = getArchitecturePiece();
-			createArchitectMeshAndFixtures({
+			createArchitectMeshAndFixtures(this.b2World, {
 				level: this.player.currentLevel,
 				state: "floating",
 				x: vec2.x,
@@ -564,12 +592,12 @@ export default class Testb2World {
 			this.b2Preview.update(dt);
 		}
 
-		processDestructions();
+		getBodyDestructionManager(this.b2World).processDestructions();
 		processHUD(dt, this.player);
 		this.stateUpdate(dt);
 	}
 
-	render(renderer: WebGLRenderer, dt: number) {
+	render(renderer: WebGLRenderer) {
 		if (this.autoClear) {
 			renderer.setClearColor(this.bgColor, 1);
 			renderer.clear(true, true, true);
@@ -601,7 +629,7 @@ export default class Testb2World {
 			if (this.debugMode) {
 				if (isKeyQDown) {
 					const { meshName, colliderName } = getArchitecturePiece();
-					createArchitectMeshAndFixtures({
+					createArchitectMeshAndFixtures(this.b2World, {
 						level: this.player.currentLevel,
 						state: "floating",
 						x: clickedb2Space.x,

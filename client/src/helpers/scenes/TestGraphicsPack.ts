@@ -1,4 +1,5 @@
 import { Body } from "box2d";
+import { b2World } from "box2d/build/dynamics/b2_world";
 import { Object3D, Scene } from "three";
 import { architectureModelFactory } from "~/factories/ArchitectureModelFactory";
 import { getBodyMeshEventManager } from "~/physics/managers/bodyMeshEventManager";
@@ -8,13 +9,13 @@ export default class TestGraphicsPack {
 	cursorBody: Body;
 	bodyMeshMap: Map<Body, Object3D> = new Map();
 
-	constructor(scene: Scene) {
-		getBodyMeshEventManager().startListeningForCreate((body, mesh) => {
+	constructor(scene: Scene, world: b2World) {
+		getBodyMeshEventManager(world).startListeningForCreate((body, mesh) => {
 			scene.add(mesh);
 			this.bodyMeshMap.set(body, mesh);
 		});
 
-		getBodyMeshEventManager().startListeningForDestroy(body => {
+		getBodyMeshEventManager(world).startListeningForDestroy(body => {
 			const mesh = architectureModelFactory.deleteMesh(body);
 			if (mesh) {
 				scene.remove(mesh);

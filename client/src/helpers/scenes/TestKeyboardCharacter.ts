@@ -21,9 +21,9 @@ export default class TestKeyboardCharacterScene extends BaseTestScene {
 			scene.update(dt);
 		}
 	}
-	render(renderer: WebGLRenderer, dt: number) {
+	render(renderer: WebGLRenderer) {
 		for (const scene of this.scenes) {
-			scene.render(renderer, dt);
+			scene.render(renderer);
 		}
 	}
 }

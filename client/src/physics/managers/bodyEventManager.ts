@@ -45,11 +45,11 @@ class BodyEventManager {
 	}
 }
 
-let bem: BodyEventManager;
+const bems = new Map<b2World, BodyEventManager>();
 
-export function getBodyEventManager() {
-	if (!bem) {
-		bem = new BodyEventManager();
+export function getBodyEventManager(world: b2World) {
+	if (!bems.has(world)) {
+		bems.set(world, new BodyEventManager());
 	}
-	return bem;
+	return bems.get(world)!;
 }

@@ -2,6 +2,7 @@ import {
 	CircleBufferGeometry,
 	Mesh,
 	MeshBasicMaterial,
+	Object3D,
 	OrthographicCamera,
 	PlaneBufferGeometry,
 	Raycaster,
@@ -230,15 +231,17 @@ export class ToggleButtonUserData {
 }
 
 export class ButtonUserData {
-	private callbacks: Array<() => void> = [];
-
+	private callbacks: Array<(data: this) => void> = [];
+	constructor(public node: Object3D) {
+		//
+	}
 	hit() {
 		for (const cb of this.callbacks) {
-			cb();
+			cb(this);
 		}
 	}
 
-	registerHitCallback(callback: () => void) {
+	registerHitCallback(callback: (data: this) => void) {
 		this.callbacks.push(callback);
 	}
 }

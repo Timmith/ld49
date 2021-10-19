@@ -14,7 +14,7 @@ export default class TestPhysicsScene extends BaseTestScene {
 	constructor(testBox = true, totalEnemies = 20, enemiesSelfCollide = true) {
 		super();
 		const b2World = new World(new Vec2(0, -9.8));
-		getBodyEventManager().init(b2World);
+		getBodyEventManager(b2World).init(b2World);
 		const b2Preview = new Box2DPreviewMesh(b2World);
 
 		this.scene.add(b2Preview);
@@ -51,7 +51,7 @@ export default class TestPhysicsScene extends BaseTestScene {
 			}
 		}
 	}
-	render(renderer: WebGLRenderer, dt: number) {
-		super.render(renderer, dt);
+	render(renderer: WebGLRenderer) {
+		super.render(renderer);
 	}
 }

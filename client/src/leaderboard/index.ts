@@ -1,3 +1,5 @@
+import { WorldData } from "~/helpers/types";
+
 const HOST = "https://pillars.attente.ca";
 
 export interface Leader {
@@ -44,10 +46,10 @@ export async function getLeaders(limit?: number, offset?: number): Promise<Leade
 	return __lastKnownLeaders;
 }
 
-export async function getDetails(id: number): Promise<string> {
+export async function getDetails(id: number): Promise<WorldData> {
 	const response = await fetch(`${HOST}/details?id=${id}`);
 	const json = await response.json();
-	return json.details;
+	return JSON.parse(json.details);
 }
 
 export function record(result: Result): Promise<Response> {

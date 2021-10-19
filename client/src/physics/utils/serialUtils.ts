@@ -1,23 +1,34 @@
 import { World } from "box2d";
+import { b2World } from "box2d/build/dynamics/b2_world";
 import Player from "~/helpers/Player";
 import { GameState, OnNewPieceCallback, WorldData } from "~/helpers/types";
 
-import { onDestructionQueueCleared } from "../managers/destructionManager";
+import { getBodyDestructionManager } from "../managers/destructionManager";
 
 import { ArchitectParams, createArchitectMeshAndFixtures, isArchitectParams } from "./physicsUtils";
 // import { Player } from "~/helpers/scenes/Testb2World";
 
-export async function loadLevelData(player: Player, data: WorldData, onNewPiece: OnNewPieceCallback): Promise<void> {
-	await new Promise<void>(resolve => onDestructionQueueCleared(resolve));
+export async function loadLevelData(
+	world: b2World,
+	player: Player,
+	data: WorldData,
+	onNewPiece: OnNewPieceCallback
+): Promise<void> {
+	const bdm = getBodyDestructionManager(world);
+	await new Promise<void>(resolve => bdm.onDestructionQueueCleared(resolve));
 
 	await Promise.all(
 		data.bodies.map(b => {
-			const p = createArchitectMeshAndFixtures(b);
+			const p = createArchitectMeshAndFixtures(world, b);
 			p.then(v => onNewPiece(v));
 			return p;
 		})
 	);
 
+	loadPlayer(player, data);
+}
+
+export function loadPlayer(player: Player, data: WorldData) {
 	player.currentHealth = data.player.currentHealth;
 	player.currentLevel = data.player.currentLevel;
 	player.currentTimer = data.player.currentTimer;
@@ -26,7 +37,6 @@ export async function loadLevelData(player: Player, data: WorldData, onNewPiece:
 	player.physicsTime = data.player.physicsTime;
 	player.currentHeight = data.player.currentHeight;
 }
-
 export function serializeWorld(gameState: GameState, player: Player, b2World: World): WorldData {
 	const bodies: ArchitectParams[] = [];
 
@@ -60,11 +70,11 @@ export function saveLevelDataToLocalStorage(gameState: GameState, player: Player
 	localStorage.setItem("level", dataString);
 }
 
-export async function loadLevelDataFromLocalStorage(player: Player, onNewPiece: OnNewPieceCallback) {
+export async function loadLevelDataFromLocalStorage(world: b2World, player: Player, onNewPiece: OnNewPieceCallback) {
 	const dataString = localStorage.getItem("level");
 	if (dataString) {
 		const data = JSON.parse(dataString) as WorldData;
-		await loadLevelData(player, data, onNewPiece);
+		await loadLevelData(world, player, data, onNewPiece);
 		return data;
 	} else {
 		console.warn("no level data in localStorage");

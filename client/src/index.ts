@@ -92,7 +92,7 @@ function loop() {
 	timeUniform.value += DESIRED_FRAME_DURATION;
 
 	test.update(DESIRED_FRAME_DURATION);
-	test.render(renderer, DESIRED_FRAME_DURATION);
+	test.render(renderer);
 }
 
 // Start loop

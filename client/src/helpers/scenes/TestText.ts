@@ -42,7 +42,7 @@ export default class TestTextScene extends BaseTestScene {
 	update(dt: number) {
 		super.update(dt);
 	}
-	render(renderer: WebGLRenderer, dt: number) {
-		super.render(renderer, dt);
+	render(renderer: WebGLRenderer) {
+		super.render(renderer);
 	}
 }

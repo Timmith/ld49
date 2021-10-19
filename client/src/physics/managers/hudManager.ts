@@ -107,7 +107,7 @@ export class HUD {
 		this.hourGlassButton.position.z = 10;
 
 		passedGUI.registerButton(this.hourGlassButton);
-		this.hourGlassButton.userData = new ButtonUserData();
+		this.hourGlassButton.userData = new ButtonUserData(this.hourGlassButton);
 		scene.add(this.hourGlassButton);
 		device.onChange(this.onResize, true);
 	}

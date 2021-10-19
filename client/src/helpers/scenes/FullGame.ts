@@ -28,10 +28,8 @@ export default class FullGame extends TestGraphics3D {
 				} else if ((leaderboardHit = this.rayCastForLeaderboard(x, y))) {
 					if (this.lookingAtTV) {
 						changeCursor(undefined, 1);
-						if (leaderboardHit.uv) {
-							if (this.leaderBoard) {
-								this.leaderBoard.projectCursorMove(leaderboardHit.uv);
-							}
+						if (this.leaderBoard && leaderboardHit.uv) {
+							this.leaderBoard.projectCursorMove(leaderboardHit.uv);
 						}
 					} else {
 						changeCursor("pointer", 1);
@@ -47,11 +45,14 @@ export default class FullGame extends TestGraphics3D {
 			},
 			coords => {
 				const button = this.gui.gui.rayCastForButton(coords[0], coords[1]);
+				let leaderboardHit: Intersection<Object3D<Event>> | undefined;
 				if (button) {
 					button.hit();
-				} else if (this.rayCastForLeaderboard(coords[0], coords[1])) {
+				} else if ((leaderboardHit = this.rayCastForLeaderboard(coords[0], coords[1]))) {
 					if (!this.lookingAtTV) {
 						this.setLookingAtTV(true);
+					} else if (this.leaderBoard && leaderboardHit.uv) {
+						this.leaderBoard.projectCursorStart(leaderboardHit.uv);
 					}
 				} else if (this.lookingAtTV) {
 					this.setLookingAtTV(false);
@@ -60,7 +61,7 @@ export default class FullGame extends TestGraphics3D {
 		);
 		this.tvCamera = this.camera.clone() as PerspectiveCamera;
 
-		this.gui = new GameGUI(this.b2World);
+		this.gui = new GameGUI(this.testB2World);
 
 		const initTV = async () => {
 			const gltfLoader = new GLTFLoader();
@@ -109,7 +110,7 @@ export default class FullGame extends TestGraphics3D {
 		this.lookingAtTV = active;
 		this.tweenerForCameraGameOrTV.value = this.lookingAtTV;
 		this.gui.gui.overlayActive.value = !this.lookingAtTV;
-		this.b2World.paused = this.lookingAtTV;
+		this.testB2World.paused = this.lookingAtTV;
 	}
 	update(dt: number) {
 		super.update(dt);
@@ -117,12 +118,12 @@ export default class FullGame extends TestGraphics3D {
 			this.leaderBoard.update(dt);
 		}
 	}
-	render(renderer: WebGLRenderer, dt: number) {
-		super.render(renderer, dt);
+	render(renderer: WebGLRenderer) {
+		super.render(renderer);
 		if (this.leaderBoard) {
 			this.leaderBoard.render(renderer);
 		}
-		this.gui.render(renderer, dt);
+		this.gui.render(renderer);
 	}
 	protected updateCamera() {
 		this.camera.position.lerpVectors(

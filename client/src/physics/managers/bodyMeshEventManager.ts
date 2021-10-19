@@ -44,11 +44,11 @@ class BodyMeshEventManager {
 	}
 }
 
-let bmem: BodyMeshEventManager;
+const bmems = new Map<b2World, BodyMeshEventManager>();
 
-export function getBodyMeshEventManager() {
-	if (!bmem) {
-		bmem = new BodyMeshEventManager();
+export function getBodyMeshEventManager(world: b2World) {
+	if (!bmems.has(world)) {
+		bmems.set(world, new BodyMeshEventManager());
 	}
-	return bmem;
+	return bmems.get(world)!;
 }

@@ -62,7 +62,7 @@ export default class GameGUI {
 		};
 		initGui();
 	}
-	render(renderer: WebGLRenderer, dt: number) {
+	render(renderer: WebGLRenderer) {
 		this.gui.render(renderer);
 	}
 }

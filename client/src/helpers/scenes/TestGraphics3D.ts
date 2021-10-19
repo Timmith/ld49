@@ -20,11 +20,13 @@ import { __PHYSICAL_SCALE_METERS } from "~/settings/constants";
 import { getUrlFlag } from "~/utils/location";
 import { hitTestPlaneAtPixel } from "~/utils/math";
 
+import { getCameraSlideDurationForLevel } from "../utils/getCameraSlideDurationForLevel";
+
 import Testb2World from "./Testb2World";
 import TestLightingScene from "./TestLighting";
 
 export default class TestGraphics3D extends TestLightingScene {
-	protected b2World: Testb2World;
+	testB2World: Testb2World;
 	protected gameCamera: PerspectiveCamera;
 	private graphicsPack: TestGraphicsPack;
 	private heightGoal: Object3D | undefined;
@@ -41,7 +43,7 @@ export default class TestGraphics3D extends TestLightingScene {
 
 		const nuPlane = new Plane(new Vector3(0, 0, -1));
 
-		this.b2World = new Testb2World(
+		this.testB2World = new Testb2World(
 			(x, y) => {
 				const vec = new Vec2(x, y);
 				const result = hitTestPlaneAtPixel(
@@ -60,19 +62,19 @@ export default class TestGraphics3D extends TestLightingScene {
 			cursorClearCheck,
 			getUrlFlag("debugPysics")
 		);
-		this.b2World.onCursorStartEvent.addListener(onCursorStart);
-		this.b2World.onLevelChange.addListener(level => {
+		this.testB2World.onCursorStartEvent.addListener(onCursorStart);
+		this.testB2World.onLevelChange.addListener(level => {
 			this.levelChangeCallback(level);
 		});
-		this.b2World.onPieceStateChange.addListener(body => {
+		this.testB2World.onPieceStateChange.addListener(body => {
 			this.pieceStateChangeCallback(body);
 		});
-		this.b2World.onCameraChange.addListener(value => {
+		this.testB2World.onCameraChange.addListener(value => {
 			this.cameraChangeCallback(value);
 		});
-		this.b2World.autoClear = false;
+		this.testB2World.autoClear = false;
 
-		this.graphicsPack = new TestGraphicsPack(this.scene);
+		this.graphicsPack = new TestGraphicsPack(this.scene, this.testB2World.b2World);
 
 		const initArt = async () => {
 			const gltfLoader = new GLTFLoader();
@@ -127,15 +129,15 @@ export default class TestGraphics3D extends TestLightingScene {
 	}
 
 	update(dt: number) {
-		this.b2World.update(dt);
+		this.testB2World.update(dt);
 		this.graphicsPack.update(dt);
 		this.updateCamera();
 		super.update(dt);
 	}
 
-	render(renderer: WebGLRenderer, dt: number) {
-		super.render(renderer, dt);
-		this.b2World.render(renderer, dt);
+	render(renderer: WebGLRenderer) {
+		super.render(renderer);
+		this.testB2World.render(renderer);
 	}
 
 	protected updateCamera() {
@@ -174,18 +176,19 @@ export default class TestGraphics3D extends TestLightingScene {
 	}
 
 	private levelChangeCallback(level: number) {
+		const duration = this.testB2World.spectatorMode ? getCameraSlideDurationForLevel(level) : 2000;
 		simpleTweener.to({
 			target: this.gameCamera.position,
 			propertyGoals: { y: level },
 			easing: Easing.Quartic.InOut,
-			duration: 2000
+			duration
 		});
 		if (this.heightGoal) {
 			simpleTweener.to({
 				target: this.heightGoal.position,
 				propertyGoals: { y: level - 0.25 },
 				easing: Easing.Quartic.InOut,
-				duration: 2000
+				duration
 			});
 		}
 		if (this.dangerZone) {
@@ -193,7 +196,7 @@ export default class TestGraphics3D extends TestLightingScene {
 				target: this.dangerZone.position,
 				propertyGoals: { y: level - 1.55 },
 				easing: Easing.Quartic.InOut,
-				duration: 2000
+				duration
 			});
 		}
 	}

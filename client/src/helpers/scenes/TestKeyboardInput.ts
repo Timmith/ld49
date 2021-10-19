@@ -16,7 +16,7 @@ export default class TestKeyboardInputScene extends TestLightingScene {
 	update(dt: number) {
 		super.update(dt);
 	}
-	render(renderer: WebGLRenderer, dt: number) {
-		super.render(renderer, dt);
+	render(renderer: WebGLRenderer) {
+		super.render(renderer);
 	}
 }

@@ -12,6 +12,7 @@ import {
 	World
 } from "box2d";
 import { b2Body } from "box2d/build/dynamics/b2_body";
+import { b2World } from "box2d/build/dynamics/b2_world";
 import { BufferGeometry, Vector2 } from "three";
 import device from "~/device";
 import { PieceState } from "~/helpers/types";
@@ -65,7 +66,7 @@ export function createStaticBox(
 	const fixtureDef = new FixtureDef();
 	bodyDef.fixedRotation = false;
 	bodyDef.type = bodyType;
-	const boxBody = getBodyEventManager().createBody(bodyDef);
+	const boxBody = getBodyEventManager(world).createBody(bodyDef);
 	boxBody.SetPositionXY(x, y);
 	fixtureDef.friction = friction;
 	fixtureDef.restitution = 0.7;
@@ -100,7 +101,7 @@ export function createSensorBox(
 	bodyDef.type = bodyType;
 
 	bodyDef.userData = entityData;
-	const boxBody = getBodyEventManager().createBody(bodyDef);
+	const boxBody = getBodyEventManager(world).createBody(bodyDef);
 
 	boxBody.SetPositionXY(x, y);
 	fixtureDef.friction = friction;
@@ -139,7 +140,7 @@ export function createDynamicBox(
 	bodyDef.type = bodyType;
 
 	bodyDef.userData = entityData;
-	const boxBody = getBodyEventManager().createBody(bodyDef);
+	const boxBody = getBodyEventManager(world).createBody(bodyDef);
 
 	boxBody.SetPositionXY(x, y);
 	fixtureDef.friction = friction;
@@ -202,13 +203,13 @@ export function isArchitectParams(params: any): params is ArchitectParams {
 	return true;
 }
 
-export async function createArchitectMeshAndFixtures(params: ArchitectParams) {
+export async function createArchitectMeshAndFixtures(world: b2World, params: ArchitectParams) {
 	const bodyDef = new BodyDef();
 	bodyDef.fixedRotation = false;
 	bodyDef.type = params.bodyType ?? BodyType.b2_dynamicBody;
 	bodyDef.userData = params;
 
-	const body = getBodyEventManager().createBody(bodyDef);
+	const body = getBodyEventManager(world).createBody(bodyDef);
 	body.SetPositionXY(params.x, params.y);
 	body.SetAngularVelocity(params.vAngle || 0);
 	body.SetLinearVelocity(new Vec2(params.vx, params.vy));
@@ -222,7 +223,7 @@ export async function createArchitectMeshAndFixtures(params: ArchitectParams) {
 		params.maskArray
 	);
 
-	getBodyMeshEventManager().createBody(body, mesh);
+	getBodyMeshEventManager(world).createBody(body, mesh);
 
 	return { body, mesh };
 }
@@ -379,6 +380,7 @@ export function deconstructConcavePath3(verts: Vector2[]) {
 
 const __origin = new Vector2();
 export default function makePolygonPhysics(
+	world: b2World,
 	body: Body | undefined,
 	verts: Vector2[],
 	type: BodyType = BodyType.b2_staticBody,
@@ -388,7 +390,7 @@ export default function makePolygonPhysics(
 	const bodyDef = new BodyDef();
 	bodyDef.type = type;
 	if (!body) {
-		body = getBodyEventManager().createBody(bodyDef);
+		body = getBodyEventManager(world).createBody(bodyDef);
 	}
 	body.SetPositionXY(position.x, position.y);
 	const subVerts2 = deconstructConcavePathMethod(verts);
@@ -521,7 +523,7 @@ export function createPhysicsCircle(b2World: World, x: number, y: number, radius
 	// 	isDead: false
 	// };
 
-	const circleBody = getBodyEventManager().createBody(bodyDef);
+	const circleBody = getBodyEventManager(b2World).createBody(bodyDef);
 	circleBody.SetPositionXY(x, y);
 	circleBody.CreateFixture(fixtureDef);
 	// circleBody.SetUserData(userData);
@@ -575,7 +577,7 @@ export function createImprovedPhysicsCircle(
 		bodyDef.bullet = true;
 	}
 
-	const circleBody = getBodyEventManager().createBody(bodyDef);
+	const circleBody = getBodyEventManager(b2World).createBody(bodyDef);
 	circleBody.SetPositionXY(x, y);
 	circleBody.CreateFixture(fixtureDef);
 

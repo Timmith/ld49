@@ -14,8 +14,8 @@ export default class Testb2WorldWithGui {
 	update(dt: number) {
 		this.b2World.update(dt);
 	}
-	render(renderer: WebGLRenderer, dt: number) {
-		this.b2World.render(renderer, dt);
-		this.gui.render(renderer, dt);
+	render(renderer: WebGLRenderer) {
+		this.b2World.render(renderer);
+		this.gui.render(renderer);
 	}
 }

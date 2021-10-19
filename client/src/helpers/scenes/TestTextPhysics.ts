@@ -33,8 +33,8 @@ export default class TestTextPhysicsScene extends TestPhysicsScene {
 	update(dt: number) {
 		super.update(dt);
 	}
-	render(renderer: WebGLRenderer, dt: number) {
-		super.render(renderer, dt);
+	render(renderer: WebGLRenderer) {
+		super.render(renderer);
 	}
 }
 
@@ -77,7 +77,7 @@ export function runTextPhysicsTest(scene: Scene, b2World: World) {
 	testCode.onMeasurementsUpdated = () => {
 		if (lastKnownTextBodies) {
 			for (const body of lastKnownTextBodies) {
-				getBodyEventManager().destroyBody(body);
+				getBodyEventManager(b2World).destroyBody(body);
 			}
 			lastKnownTextBodies = undefined;
 		}

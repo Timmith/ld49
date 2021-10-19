@@ -40,7 +40,7 @@ export class BaseTestScene {
 		this.scene.updateMatrixWorld(false);
 	}
 
-	render(renderer: WebGLRenderer, dt: number) {
+	render(renderer: WebGLRenderer) {
 		if (this.autoClear) {
 			renderer.setClearColor(this.bgColor, 1);
 			renderer.clear(true, true, true);
