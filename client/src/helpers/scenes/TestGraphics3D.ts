@@ -20,7 +20,8 @@ import { getUrlFlag } from "~/utils/location";
 import { hitTestPlaneAtPixel } from "~/utils/math";
 
 import { getCopyOfArtStage } from "../art";
-import { PieceState } from "../types";
+import Player from "../Player";
+import { GameState, PieceState } from "../types";
 import { getCameraSlideDurationForLevel } from "../utils/getCameraSlideDurationForLevel";
 
 import Testb2World from "./Testb2World";
@@ -112,7 +113,7 @@ export default class TestGraphics3D extends TestLightingScene {
 			this.pieceStateChangeCallback(body);
 		});
 		this.testB2World.onCameraChange.addListener(value => {
-			this.cameraChangeCallback(value);
+			this.cameraChangeCallback(value, this.testB2World.state, this.testB2World.player);
 		});
 		this.testB2World.autoClear = false;
 
@@ -151,7 +152,7 @@ export default class TestGraphics3D extends TestLightingScene {
 					sky.receiveShadow = false;
 					const map = sky.material.map;
 					const color = new Color(2, 2, 2);
-					sky.material = new MeshBasicMaterial({ map, fog: true, color });
+					sky.material = new MeshBasicMaterial({ map, fog: false, color });
 				}
 			}
 			this.heightGoal = heightGoal;
@@ -192,6 +193,7 @@ export default class TestGraphics3D extends TestLightingScene {
 
 	private levelChangeCallback(level: number) {
 		const duration = this.testB2World.spectatorMode ? getCameraSlideDurationForLevel(level) : 2000;
+
 		simpleTweener.to({
 			target: this.gameCamera.position,
 			propertyGoals: { y: level },
@@ -214,23 +216,68 @@ export default class TestGraphics3D extends TestLightingScene {
 				duration
 			});
 		}
+		if (this.testB2World.spectatorMode) {
+			setTimeout(() => {
+				simpleTweener.to({
+					target: this.gameCamera.position,
+					propertyGoals: {
+						y: level / 2,
+						z: 5 + level + level / 2
+					},
+					easing: Easing.Quartic.InOut,
+					duration: 1000
+				});
+			}, duration + 500);
+		}
 	}
 
-	private cameraChangeCallback(value: number) {
-		if (this.gameCamera.position.y + value < 0) {
-			simpleTweener.to({
-				target: this.gameCamera.position,
-				propertyGoals: { y: 0 },
-				easing: Easing.Quartic.InOut,
-				duration: 500
-			});
-		} else {
-			simpleTweener.to({
-				target: this.gameCamera.position,
-				propertyGoals: { y: this.gameCamera.position.y + value },
-				easing: Easing.Quartic.InOut,
-				duration: 500
-			});
+	private cameraChangeCallback(value: number, state: GameState, player: Player) {
+		console.log(`The current state: ${state}`);
+		console.log(`The player's current level: ${player.currentLevel}`);
+
+		switch (state) {
+			case "gameOver":
+				simpleTweener.to({
+					target: this.gameCamera.position,
+					propertyGoals: {
+						y: player.currentLevel / 2,
+						z: 5 + player.currentLevel + player.currentLevel / 2
+					},
+					easing: Easing.Quartic.InOut,
+					duration: 1000
+				});
+
+				break;
+			case "waitingForInput":
+				simpleTweener.to({
+					target: this.gameCamera.position,
+					propertyGoals: {
+						y: player.currentLevel,
+						z: 5
+					},
+					easing: Easing.Quartic.InOut,
+					duration: 1000
+				});
+
+				break;
+			default:
+				if (this.gameCamera.position.y + value < 0) {
+					simpleTweener.to({
+						target: this.gameCamera.position,
+						propertyGoals: { y: 0 },
+						easing: Easing.Quartic.InOut,
+						duration: 500
+					});
+				} else {
+					simpleTweener.to({
+						target: this.gameCamera.position,
+						propertyGoals: { y: this.gameCamera.position.y + value },
+						easing: Easing.Quartic.InOut,
+						duration: 500
+					});
+				}
+
+				break;
 		}
 	}
 }

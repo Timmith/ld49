@@ -74,7 +74,6 @@ function __alwaysAllowCursor(x: number, y: number) {
 }
 
 export default class Testb2World {
-	spectatorMode: any;
 	get state(): GameState {
 		return this._state;
 	}
@@ -101,6 +100,7 @@ export default class Testb2World {
 	autoClear = true;
 
 	player = new Player();
+	spectatorMode: boolean;
 
 	onAnnouncementChange = new EventDispatcher<string>();
 	onStateChange = new EventDispatcher<GameState>();
@@ -121,6 +121,7 @@ export default class Testb2World {
 	private stateChanges: { [K in GameState]: () => void } = {
 		uninitialized: noop,
 		waitingForInput: () => {
+			this.onCameraChange.dispatch(0);
 			this.changeAnnouncement(`${device.isDesktop ? "Click" : "Touch"} to Start!`);
 			this.simulating = false;
 			this.interactive = true;
@@ -198,11 +199,8 @@ export default class Testb2World {
 			if (this.spectatorMode) {
 				return;
 			}
+
 			this.simulating = false;
-			this.changeAnnouncement("Game Over!");
-
-			console.log("Sorry, you lost!");
-
 			const height = this.player.currentHeight * __PHYSICAL_SCALE_METERS;
 			const score = ~~(height * 100);
 			try {
@@ -240,15 +238,29 @@ export default class Testb2World {
 				console.warn("Leaderboard not available");
 			}
 
-			this.failedPieces.length = 0;
-
-			this.activeArchitectureBodies.forEach(body => {
-				const fixt = body.GetFixtureList();
-				if (fixt) {
-					getBodyDestructionManager(this.b2World).queueDestruction(fixt.GetBody());
+			this.onCameraChange.dispatch(0);
+			this.delayedGameEvent(() => {
+				for (const body of this.activeArchitectureBodies) {
+					const userData = body.GetUserData();
+					if (isArchitectParams(userData)) {
+						this.setPieceMode(body, "falling");
+					}
 				}
-			});
-			this.activeArchitectureBodies.length = 0;
+				this.changeAnnouncement("Game Over!");
+				this.simulating = true;
+			}, 0.5);
+			// console.log("Sorry, you lost!");
+
+			this.delayedGameEvent(() => {
+				this.failedPieces.length = 0;
+				this.activeArchitectureBodies.forEach(body => {
+					const fixt = body.GetFixtureList();
+					if (fixt) {
+						getBodyDestructionManager(this.b2World).queueDestruction(fixt.GetBody());
+					}
+				});
+				this.activeArchitectureBodies.length = 0;
+			}, 9);
 
 			this.delayedGameEvent(() => {
 				this.changeLevel(0);
@@ -256,7 +268,7 @@ export default class Testb2World {
 				this.player.currentHeight = 0;
 				this.player.currentHealth = 5;
 				this.state = "waitingForInput";
-			}, 2);
+			}, 10);
 		}
 	};
 
@@ -476,8 +488,18 @@ export default class Testb2World {
 		this.state = data.gameState;
 		if (spectatorMode) {
 			this.player.currentTimer = getCameraSlideDurationForLevel(this.player.currentLevel) * 0.001;
+			this.delayedGameEvent(() => {
+				// console.log("delay fired");
+				for (const body of this.activeArchitectureBodies) {
+					const userData = body.GetUserData();
+					if (isArchitectParams(userData)) {
+						this.setPieceMode(body, "falling");
+					}
+				}
+			}, this.player.currentTimer + 0.5);
 		}
 	}
+
 	changeAnnouncement(message: string) {
 		this.onAnnouncementChange.dispatch(message);
 	}
